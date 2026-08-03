@@ -42,7 +42,7 @@ const getDistanceKm = (coords1, coords2) => {
   return d;
 };
 
-export default function DeviceDetailPanel({ device, selectedDate, onSelectedDateChange, historyPoints, onHistoryPointsChange, onClose }) {
+export default function DeviceDetailPanel({ device, selectedDate, onSelectedDateChange, historyPoints, onHistoryPointsChange, onMatchedPathChange, onClose }) {
   const [activeTab, setActiveTab] = useState('tracking'); // 'tracking' | 'analytics' | 'details'
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -95,7 +95,7 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
     const endOfDay = new Date(selectedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    deviceApi.getHistory(device.deviceId, startOfDay.toISOString(), endOfDay.toISOString())
+    deviceApi.getHistory(device.deviceId, startOfDay.toISOString(), endOfDay.toISOString(), { matched: true })
       .then(res => {
         // AWS history positions come sorted by sampleTime desc (newest first).
         // Sort oldest to newest for chronological aggregation
@@ -103,10 +103,14 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
           (a, b) => new Date(a.SampleTime) - new Date(b.SampleTime)
         );
         onHistoryPointsChange(sortedHistory);
+        // matchedPath is only populated when the backend has a local OSRM
+        // instance configured; otherwise this is null and the map layer
+        // falls back to drawing from the raw points above.
+        onMatchedPathChange?.(res.matchedPath || []);
       })
       .catch(err => console.error('[History] Failed to load:', err))
       .finally(() => setLoading(false));
-  }, [device?.deviceId, selectedDate, onHistoryPointsChange]);
+  }, [device?.deviceId, selectedDate, onHistoryPointsChange, onMatchedPathChange]);
 
   useEffect(() => {
     fetchHistory();

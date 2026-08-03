@@ -27,6 +27,7 @@ function App() {
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [historyPoints, setHistoryPoints] = useState([]);
+  const [matchedPath, setMatchedPath] = useState([]);
 
   const selectedDeviceRef = useRef(selectedDevice);
   useEffect(() => {
@@ -411,6 +412,7 @@ function App() {
                    deviceId={selectedDevice?.deviceId}
                    isVisible={!!selectedDevice}
                    history={historyPoints}
+                   matchedPath={matchedPath}
                  />
 
                 {/* Devices Overlay Panel (Locate Button) */}
@@ -433,9 +435,11 @@ function App() {
                    onSelectedDateChange={setSelectedDate}
                    historyPoints={historyPoints}
                    onHistoryPointsChange={setHistoryPoints}
+                   onMatchedPathChange={setMatchedPath}
                    onClose={() => {
                      setSelectedDevice(null);
                      setHistoryPoints([]);
+                     setMatchedPath([]);
                    }}
                  />
                )}

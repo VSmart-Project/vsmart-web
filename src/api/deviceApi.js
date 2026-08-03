@@ -50,12 +50,17 @@ export const deviceApi = {
     getById: (id) => apiFetch(`/api/devices/${encodeURIComponent(id)}`),
 
     /**
-     * Fetch a single device's position history
+     * Fetch a single device's position history.
+     * Pass `{ matched: true }` to also request a road-snapped `matchedPath`
+     * (only populated when the backend has a local OSRM instance configured;
+     * otherwise `matchedPath` comes back null and callers should fall back
+     * to drawing from the raw `data` array as before).
      */
-    getHistory: (id, startTime, endTime) => {
+    getHistory: (id, startTime, endTime, { matched } = {}) => {
         const queryParams = new URLSearchParams();
         if (startTime) queryParams.append('startTime', startTime);
         if (endTime) queryParams.append('endTime', endTime);
+        if (matched) queryParams.append('matched', 'true');
         const q = queryParams.toString() ? `?${queryParams.toString()}` : '';
         return apiFetch(`/api/devices/${encodeURIComponent(id)}/history${q}`);
     },
