@@ -3,18 +3,18 @@ import { clsx } from 'clsx';
 import { Truck, Car, Package, Bus, Bike } from 'lucide-react';
 
 const TYPE_CONFIG = {
-    truck: { label: 'Truck', Icon: Truck, color: 'text-indigo-600 bg-indigo-50' },
-    car: { label: 'Car', Icon: Car, color: 'text-blue-600 bg-blue-50' },
-    motorbike: { label: 'Motorbike', Icon: Bike, color: 'text-purple-600 bg-purple-50' },
-    van: { label: 'Van', Icon: Package, color: 'text-teal-600 bg-teal-50' },
-    bus: { label: 'Bus', Icon: Bus, color: 'text-green-600 bg-green-50' },
-    other: { label: 'Other', Icon: Package, color: 'text-slate-650 bg-slate-50' },
+    truck: { label: 'Truck', Icon: Truck, color: 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-400/10' },
+    car: { label: 'Car', Icon: Car, color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10' },
+    motorbike: { label: 'Motorbike', Icon: Bike, color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10' },
+    van: { label: 'Van', Icon: Package, color: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10' },
+    bus: { label: 'Bus', Icon: Bus, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10' },
+    other: { label: 'Other', Icon: Package, color: 'text-muted dark:text-muted-dark bg-surface dark:bg-white/5' },
 };
 
 const STATUS_CONFIG = {
-    active: { label: 'Active', color: 'text-green-700 bg-green-50 border-green-200' },
-    inactive: { label: 'Inactive', color: 'text-slate-650 bg-slate-50 border-slate-200' },
-    maintenance: { label: 'Maintenance', color: 'text-yellow-705 bg-yellow-50 border-yellow-200' },
+    active: { label: 'Active', color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' },
+    inactive: { label: 'Inactive', color: 'text-muted dark:text-muted-dark bg-surface dark:bg-white/5 border-hairline dark:border-hairline-dark' },
+    maintenance: { label: 'Maintenance', color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30' },
 };
 
 export default function DevicesMapOverlay({
@@ -41,16 +41,16 @@ export default function DevicesMapOverlay({
 
             {/* Devices Dropdown Panel */}
             {isOpenedPanel && (
-                <div className="absolute top-16 left-[155px] w-80 bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_15px_35px_rgba(15,23,42,0.1)] border border-slate-200/80 z-10 overflow-hidden flex flex-col max-h-[60vh] select-none animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute top-16 left-[155px] w-80 bg-card/95 dark:bg-card-dark/95 backdrop-blur-md rounded-2xl shadow-panel-lg dark:shadow-panel-lg-dark border border-hairline dark:border-hairline-dark z-10 overflow-hidden flex flex-col max-h-[60vh] select-none animate-fade-in">
                     {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-100">
-                        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                            <Navigation2 className="w-4 h-4 text-indigo-650" />
+                    <div className="flex items-center justify-between px-4 py-3.5 border-b border-hairline dark:border-hairline-dark">
+                        <h2 className="text-xs font-bold text-ink dark:text-ink-dark uppercase tracking-wider flex items-center space-x-2">
+                            <Navigation2 className="w-4 h-4 text-brand-500 dark:text-brand-400" />
                             <span>Registered Devices ({devices.length})</span>
                         </h2>
                         <button
                             onClick={() => onPanelChange(null)}
-                            className="text-slate-400 hover:text-slate-650 transition-colors"
+                            className="text-subtle dark:text-subtle-dark hover:text-ink dark:hover:text-ink-dark transition-colors"
                         >
                             <X className="w-4 h-4" />
                         </button>
@@ -59,7 +59,7 @@ export default function DevicesMapOverlay({
                     {/* List */}
                     <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
                         {devices.length === 0 ? (
-                            <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                            <div className="text-center py-6 text-subtle dark:text-subtle-dark text-xs font-semibold">
                                 No devices found.
                             </div>
                         ) : (
@@ -75,14 +75,14 @@ export default function DevicesMapOverlay({
                                             onDeviceSelect(device, true); // true = zoom to device
                                             onPanelChange(null); // close panel after selection
                                         }}
-                                        className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 cursor-pointer border border-transparent hover:border-slate-100 transition-all group"
+                                        className="flex items-center justify-between p-3 rounded-xl hover:bg-surface dark:hover:bg-white/5 cursor-pointer border border-transparent hover:border-hairline dark:hover:border-hairline-dark transition-all group"
                                     >
                                         <div className="flex items-center space-x-3">
                                             <div className={clsx('p-2 rounded-xl', typeConf.color)}>
                                                 <TypeIcon className="w-4 h-4" />
                                             </div>
                                             <div>
-                                                <p className="font-bold text-slate-700 text-xs leading-tight">
+                                                <p className="font-bold text-ink dark:text-ink-dark text-xs leading-tight">
                                                     {device.displayName || device.deviceId}
                                                 </p>
                                                 <div className="flex items-center space-x-2 mt-1">
@@ -95,7 +95,7 @@ export default function DevicesMapOverlay({
                                                         {statusConf.label}
                                                     </span>
                                                     {!device.position && (
-                                                        <span className="text-[10px] text-slate-400 italic font-medium">
+                                                        <span className="text-[10px] text-subtle dark:text-subtle-dark italic font-medium">
                                                             Unknown location
                                                         </span>
                                                     )}
@@ -104,7 +104,7 @@ export default function DevicesMapOverlay({
                                         </div>
                                         {/* Hover Locate Icon */}
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <div className="p-1.5 text-slate-400 group-hover:text-indigo-650 bg-indigo-50/50 rounded-xl">
+                                            <div className="p-1.5 text-subtle dark:text-subtle-dark group-hover:text-brand-600 dark:group-hover:text-brand-400 bg-brand-50/50 dark:bg-brand-400/10 rounded-xl">
                                                 <Crosshair className="w-4 h-4" />
                                             </div>
                                         </div>

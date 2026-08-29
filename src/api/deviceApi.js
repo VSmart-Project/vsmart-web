@@ -117,4 +117,18 @@ export const antitheftApi = {
         }),
 };
 
+export const geofenceApi = {
+    list: () => apiFetch('/api/geofences'),
+    put: (geofenceId, polygon) =>
+        apiFetch(`/api/geofences/${encodeURIComponent(geofenceId)}`, {
+            method: 'PUT',
+            body: JSON.stringify({ polygon }),
+        }),
+    delete: (geofenceIds) =>
+        apiFetch('/api/geofences', {
+            method: 'DELETE',
+            body: JSON.stringify({ geofenceIds }),
+        }),
+};
+
 export default apiFetch;

@@ -24,8 +24,8 @@ const polygons = {
   type: "fill",
   source: "drawn-geofences",
   paint: {
-    "fill-color": "#FF9900",
-    "fill-opacity": 0.3,
+    "fill-color": "#6664d8",
+    "fill-opacity": 0.18,
   },
 };
 
@@ -34,7 +34,7 @@ const polygonsBorders = {
   type: "line",
   source: "drawn-geofences",
   paint: {
-    "line-color": "#FF9900",
+    "line-color": "#6664d8",
     "line-width": 2,
   },
 };
@@ -44,8 +44,8 @@ const polygonsBreached = {
   type: "fill",
   source: "drawn-geofences-breached",
   paint: {
-    "fill-color": "#dc2626",
-    "fill-opacity": 0.4,
+    "fill-color": "#e11d48",
+    "fill-opacity": 0.3,
   },
 };
 
@@ -54,7 +54,7 @@ const polygonsBreachedBorders = {
   type: "line",
   source: "drawn-geofences-breached",
   paint: {
-    "line-color": "#dc2626",
+    "line-color": "#e11d48",
     "line-width": 2,
   },
 };

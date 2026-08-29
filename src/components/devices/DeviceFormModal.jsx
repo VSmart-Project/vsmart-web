@@ -12,9 +12,9 @@ const DEVICE_TYPES = [
 ];
 
 const DEVICE_STATUSES = [
-    { value: 'active', label: 'Active', color: 'text-green-700 bg-green-50 border-green-200' },
-    { value: 'inactive', label: 'Inactive', color: 'text-gray-700 bg-gray-50 border-gray-200' },
-    { value: 'maintenance', label: 'Maintenance', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+    { value: 'active', label: 'Active', color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' },
+    { value: 'inactive', label: 'Inactive', color: 'text-muted dark:text-muted-dark bg-surface dark:bg-white/5 border-hairline dark:border-hairline-dark' },
+    { value: 'maintenance', label: 'Maintenance', color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30' },
 ];
 
 const DEFAULT_FORM = {
@@ -103,24 +103,24 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg animate-slide-in">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <div className="bg-card dark:bg-card-dark rounded-xl shadow-2xl w-full max-w-lg animate-slide-in border border-hairline dark:border-hairline-dark">
 
                 {/* ── Header ── */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-aws-gray-200">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-hairline dark:border-hairline-dark">
                     <div className="flex items-center space-x-3">
-                        <div className={clsx('p-2 rounded-lg', isEditMode ? 'bg-blue-50' : 'bg-green-50')}>
+                        <div className={clsx('p-2 rounded-lg', isEditMode ? 'bg-blue-50 dark:bg-blue-500/10' : 'bg-emerald-50 dark:bg-emerald-500/10')}>
                             {isEditMode
-                                ? <Pencil className="w-5 h-5 text-blue-600" />
-                                : <Plus className="w-5 h-5 text-green-600" />}
+                                ? <Pencil className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                : <Plus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
                         </div>
-                        <h2 className="text-lg font-semibold text-aws-gray-900">
+                        <h2 className="text-lg font-semibold text-ink dark:text-ink-dark">
                             {isEditMode ? `Edit: ${device.deviceId}` : 'Add New Device'}
                         </h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-aws-gray-400 hover:text-aws-gray-600 transition-colors p-1 rounded"
+                        className="text-subtle dark:text-subtle-dark hover:text-ink dark:hover:text-ink-dark transition-colors p-1 rounded"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -131,7 +131,7 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
 
                     {/* Server error banner */}
                     {errors.server && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+                        <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-400 rounded-lg px-4 py-3 text-sm">
                             {errors.server}
                         </div>
                     )}
@@ -139,8 +139,8 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
                     {/* Device ID — create mode only */}
                     {!isEditMode && (
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
-                                Device ID <span className="text-red-500">*</span>
+                            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">
+                                Device ID <span className="text-rose-500">*</span>
                             </label>
                             <input
                                 type="text"
@@ -148,14 +148,14 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
                                 onChange={(e) => handleChange('deviceId', e.target.value)}
                                 placeholder="e.g. Vehicle-001"
                                 className={clsx(
-                                    'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition',
-                                    errors.deviceId ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
+                                    'input-field',
+                                    errors.deviceId && '!border-rose-400 focus:!ring-rose-400/20'
                                 )}
                             />
                             {errors.deviceId && (
-                                <p className="text-xs text-red-600 mt-1">{errors.deviceId}</p>
+                                <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{errors.deviceId}</p>
                             )}
-                            <p className="text-xs text-slate-400 mt-1">
+                            <p className="text-xs text-subtle dark:text-subtle-dark mt-1">
                                 Must match the DeviceId the physical device uses when publishing to IoT Core.
                             </p>
                         </div>
@@ -163,8 +163,8 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
 
                     {/* Display Name */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">
-                            Display Name <span className="text-red-500">*</span>
+                        <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">
+                            Display Name <span className="text-rose-500">*</span>
                         </label>
                         <input
                             type="text"
@@ -172,23 +172,23 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
                             onChange={(e) => handleChange('displayName', e.target.value)}
                             placeholder="e.g. Truck #1"
                             className={clsx(
-                                'w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition',
-                                errors.displayName ? 'border-red-400 focus:ring-red-400' : 'border-slate-300'
+                                'input-field',
+                                errors.displayName && '!border-rose-400 focus:!ring-rose-400/20'
                             )}
                         />
                         {errors.displayName && (
-                            <p className="text-xs text-red-600 mt-1">{errors.displayName}</p>
+                            <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{errors.displayName}</p>
                         )}
                     </div>
 
                     {/* Type + Status — same row */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Type</label>
+                            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">Vehicle Type</label>
                             <select
                                 value={form.type}
                                 onChange={(e) => handleChange('type', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                className="input-field"
                             >
                                 {DEVICE_TYPES.map(({ value, label }) => (
                                     <option key={value} value={value}>{label}</option>
@@ -196,11 +196,11 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">Status</label>
                             <select
                                 value={form.status}
                                 onChange={(e) => handleChange('status', e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                                className="input-field"
                             >
                                 {DEVICE_STATUSES.map(({ value, label }) => (
                                     <option key={value} value={value}>{label}</option>
@@ -211,24 +211,24 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">Description</label>
                         <textarea
                             value={form.description}
                             onChange={(e) => handleChange('description', e.target.value)}
                             placeholder="e.g. Long-haul delivery truck, route HN-HCM"
                             rows={2}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition resize-none"
+                            className="input-field resize-none"
                         />
                     </div>
                 </form>
 
                 {/* ── Footer ── */}
-                <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl">
+                <div className="flex items-center justify-end space-x-3 px-6 py-4 border-t border-hairline dark:border-hairline-dark bg-surface dark:bg-white/[0.02] rounded-b-xl">
                     <button
                         type="button"
                         onClick={onClose}
                         disabled={submitting}
-                        className="px-4 py-2 text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition text-sm font-medium disabled:opacity-50"
+                        className="btn-secondary disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -237,7 +237,7 @@ export default function DeviceFormModal({ isOpen, onClose, onSubmit, device }) {
                         disabled={submitting}
                         className={clsx(
                             'px-5 py-2 text-white rounded-lg transition text-sm font-medium flex items-center space-x-2 disabled:opacity-60',
-                            isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'
+                            isEditMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
                         )}
                     >
                         {submitting && <Loader2 className="w-4 h-4 animate-spin" />}

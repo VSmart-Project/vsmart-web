@@ -10,11 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@aws-sdk/client-location": "^3.709.0",
-    "@aws-sdk/client-sqs": "^3.709.0",
-    "@aws-sdk/credential-providers": "^3.709.0",
-    "@aws/amazon-location-utilities-auth-helper": "^1.0.5",
     "@mapbox/mapbox-gl-draw": "^1.4.3",
+    "@phosphor-icons/react": "^2.1.10",
     "@turf/turf": "^7.1.0",
     "aws-amplify": "^6.16.4",
     "clsx": "^2.1.1",

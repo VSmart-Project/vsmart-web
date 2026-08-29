@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { deviceApi } from '../../api/deviceApi';
 import { REGION, MAP, API_KEY } from '../../configuration';
+import { useTheme } from '../../hooks/useTheme.js';
 // Calculate distance between two coordinates in km (Haversine formula)
 const getDistanceKm = (coords1, coords2) => {
   if (!coords1 || !coords2) return 0;
@@ -46,6 +47,7 @@ export default function DashboardView({
   onDeviceSelect,
   onAddDevice
 }) {
+  const { theme } = useTheme();
   const [selectedDashboardDevice, setSelectedDashboardDevice] = useState(null);
   const [historyPoints, setHistoryPoints] = useState([]);
   const [mapViewport, setMapViewport] = useState({
@@ -170,14 +172,14 @@ export default function DashboardView({
   }, [historyPoints]);
 
   return (
-    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6 bg-slate-50/50 custom-scrollbar select-none">
+    <div className="h-full overflow-y-auto p-4 md:p-6 space-y-6 bg-surface dark:bg-surface-dark custom-scrollbar select-none">
       
       {/* ── Title Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">
-            Here's a detailed overview of your dashboard fleet tracking.
+          <h1 className="text-xl font-bold text-ink dark:text-ink-dark">Dashboard</h1>
+          <p className="text-xs text-subtle dark:text-subtle-dark font-semibold mt-0.5">
+            Here's a live overview of your vehicle tracking.
           </p>
         </div>
       </div>
@@ -185,19 +187,19 @@ export default function DashboardView({
       {/* ── Top Grid Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Total */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] flex flex-col justify-between h-36">
+        <div className="card !p-5 flex flex-col justify-between h-36">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Vehicles</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-2">{stats.total}</p>
+              <p className="text-xs text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Total Vehicles</p>
+              <p className="text-3xl font-extrabold text-ink dark:text-ink-dark mt-2">{stats.total}</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-650">
+            <div className="w-10 h-10 rounded-2xl bg-brand-50 dark:bg-brand-400/10 flex items-center justify-center text-brand-600 dark:text-brand-300">
               <Truck className="w-5 h-5" />
             </div>
           </div>
           <button 
             onClick={() => onViewChange('devices')}
-            className="flex items-center space-x-1.5 text-xs text-indigo-600 font-bold hover:text-indigo-850 transition-colors mt-auto"
+            className="flex items-center space-x-1.5 text-xs text-brand-600 dark:text-brand-400 font-bold hover:text-brand-700 dark:hover:text-brand-300 transition-colors mt-auto"
           >
             <span>View Details</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -205,19 +207,19 @@ export default function DashboardView({
         </div>
 
         {/* Card 2: Inactive */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] flex flex-col justify-between h-36">
+        <div className="card !p-5 flex flex-col justify-between h-36">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Not Available</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-2">{stats.inactive}</p>
+              <p className="text-xs text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Not Available</p>
+              <p className="text-3xl font-extrabold text-ink dark:text-ink-dark mt-2">{stats.inactive}</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center text-red-500">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-500 dark:text-rose-400">
               <XCircle className="w-5 h-5" />
             </div>
           </div>
           <button 
             onClick={() => onViewChange('devices')}
-            className="flex items-center space-x-1.5 text-xs text-indigo-600 font-bold hover:text-indigo-850 transition-colors mt-auto"
+            className="flex items-center space-x-1.5 text-xs text-brand-600 dark:text-brand-400 font-bold hover:text-brand-700 dark:hover:text-brand-300 transition-colors mt-auto"
           >
             <span>View Details</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -225,19 +227,19 @@ export default function DashboardView({
         </div>
 
         {/* Card 3: Maintenance */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] flex flex-col justify-between h-36">
+        <div className="card !p-5 flex flex-col justify-between h-36">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">In Repair</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-2">{stats.maintenance}</p>
+              <p className="text-xs text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">In Repair</p>
+              <p className="text-3xl font-extrabold text-ink dark:text-ink-dark mt-2">{stats.maintenance}</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-green-50 flex items-center justify-center text-green-550">
-              <RefreshCw className="w-4 h-4 animate-spin-slow" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <RefreshCw className="w-4 h-4" />
             </div>
           </div>
           <button 
             onClick={() => onViewChange('devices')}
-            className="flex items-center space-x-1.5 text-xs text-indigo-600 font-bold hover:text-indigo-850 transition-colors mt-auto"
+            className="flex items-center space-x-1.5 text-xs text-brand-600 dark:text-brand-400 font-bold hover:text-brand-700 dark:hover:text-brand-300 transition-colors mt-auto"
           >
             <span>View Details</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -245,19 +247,19 @@ export default function DashboardView({
         </div>
 
         {/* Card 4: Active */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] flex flex-col justify-between h-36">
+        <div className="card !p-5 flex flex-col justify-between h-36">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Reserved</p>
-              <p className="text-3xl font-extrabold text-slate-800 mt-2">{stats.active}</p>
+              <p className="text-xs text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Reserved</p>
+              <p className="text-3xl font-extrabold text-ink dark:text-ink-dark mt-2">{stats.active}</p>
             </div>
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+            <div className="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
               <CheckCircle className="w-5 h-5" />
             </div>
           </div>
           <button 
             onClick={() => onViewChange('devices')}
-            className="flex items-center space-x-1.5 text-xs text-indigo-600 font-bold hover:text-indigo-850 transition-colors mt-auto"
+            className="flex items-center space-x-1.5 text-xs text-brand-600 dark:text-brand-400 font-bold hover:text-brand-700 dark:hover:text-brand-300 transition-colors mt-auto"
           >
             <span>View Details</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -269,13 +271,13 @@ export default function DashboardView({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* Left Column: Map Overview (7/12 width) */}
-        <div className="lg:col-span-7 bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] flex flex-col h-[480px]">
+        <div className="lg:col-span-7 card !p-5 flex flex-col h-[480px]">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Map Overview</h2>
+              <h2 className="text-sm font-bold text-ink dark:text-ink-dark uppercase tracking-wider">Map Overview</h2>
               {selectedDashboardDevice && (
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                  Showing active route for: <span className="text-indigo-600 font-bold">{selectedDashboardDevice.displayName || selectedDashboardDevice.deviceId}</span>
+                <p className="text-[10px] text-subtle dark:text-subtle-dark font-semibold mt-0.5">
+                  Showing active route for: <span className="text-brand-600 dark:text-brand-400 font-bold">{selectedDashboardDevice.displayName || selectedDashboardDevice.deviceId}</span>
                 </p>
               )}
             </div>
@@ -287,7 +289,7 @@ export default function DashboardView({
                 const dev = devices.find(d => d.deviceId === e.target.value);
                 if (dev) setSelectedDashboardDevice(dev);
               }}
-              className="text-xs font-bold border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-slate-600 cursor-pointer"
+              className="text-xs font-bold border border-hairline dark:border-hairline-dark rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/30 bg-card dark:bg-white/5 text-ink dark:text-ink-dark cursor-pointer"
             >
               {devices.map(d => (
                 <option key={d.deviceId} value={d.deviceId}>
@@ -298,14 +300,14 @@ export default function DashboardView({
           </div>
 
           {/* Interactive Map */}
-          <div className="flex-1 rounded-2xl overflow-hidden relative border border-slate-100">
+          <div className="flex-1 rounded-2xl overflow-hidden relative border border-hairline dark:border-hairline-dark">
             <Map
               longitude={mapViewport.longitude}
               latitude={mapViewport.latitude}
               zoom={mapViewport.zoom}
               onMove={evt => setMapViewport(evt.viewState)}
               style={{ width: '100%', height: '100%' }}
-              mapStyle={`https://maps.geo.${REGION}.amazonaws.com/v2/styles/${MAP.STYLE}/descriptor?key=${API_KEY}&color-scheme=${MAP.COLOR_SCHEME}`}
+              mapStyle={`https://maps.geo.${REGION}.amazonaws.com/v2/styles/${MAP.STYLE}/descriptor?key=${API_KEY}&color-scheme=${theme === 'dark' ? 'Dark' : 'Light'}`}
               validateStyle={false}
             >
               {/* Route line */}
@@ -315,7 +317,7 @@ export default function DashboardView({
                     id="route-line-layer"
                     type="line"
                     paint={{
-                      'line-color': '#4F46E5',
+                      'line-color': theme === 'dark' ? '#8d8ae8' : '#6664d8',
                       'line-width': 4,
                       'line-opacity': 0.85
                     }}
@@ -335,9 +337,9 @@ export default function DashboardView({
                   anchor="center"
                 >
                   <div className="relative flex items-center justify-center">
-                    <div className="absolute inset-0 w-8 h-8 bg-indigo-600 opacity-25 rounded-full animate-ping" />
-                    <div className="w-5 h-5 rounded-full bg-indigo-600 border-2 border-white shadow-md flex items-center justify-center">
-                      <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                    <div className="absolute inset-0 w-8 h-8 bg-brand-500 dark:bg-brand-400 opacity-25 rounded-full animate-ping" />
+                    <div className="w-5 h-5 rounded-full bg-brand-500 dark:bg-brand-400 border-2 border-white dark:border-card-dark shadow-md flex items-center justify-center">
+                      <div className="w-2.5 h-2.5 rounded-full bg-white dark:bg-card-dark" />
                     </div>
                   </div>
                 </Marker>
@@ -345,22 +347,22 @@ export default function DashboardView({
             </Map>
 
             {/* Bottom floating details overlay inside map */}
-            <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-md border border-slate-100 rounded-2xl p-4 shadow-lg grid grid-cols-3 gap-2 text-center">
+            <div className="absolute bottom-4 left-4 right-4 bg-card/90 dark:bg-card-dark/90 backdrop-blur-md border border-hairline dark:border-hairline-dark rounded-2xl p-4 shadow-panel dark:shadow-panel-dark grid grid-cols-3 gap-2 text-center">
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Average Speed</p>
-                <p className="text-sm font-extrabold text-slate-800 mt-1">
+                <p className="text-[10px] text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Average Speed</p>
+                <p className="text-sm font-extrabold text-ink dark:text-ink-dark mt-1">
                   {routeStats.avgSpeed || '---'}
                 </p>
               </div>
-              <div className="border-x border-slate-100">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Distance</p>
-                <p className="text-sm font-extrabold text-slate-800 mt-1">
+              <div className="border-x border-hairline dark:border-hairline-dark">
+                <p className="text-[10px] text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Distance</p>
+                <p className="text-sm font-extrabold text-ink dark:text-ink-dark mt-1">
                   {routeStats.totalDistance || '---'}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Duration</p>
-                <p className="text-sm font-extrabold text-slate-800 mt-1">
+                <p className="text-[10px] text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Duration</p>
+                <p className="text-sm font-extrabold text-ink dark:text-ink-dark mt-1">
                   {routeStats.durationStr || '---'}
                 </p>
               </div>
@@ -369,13 +371,13 @@ export default function DashboardView({
         </div>
 
         {/* Right Column: Ongoing Delivery (5/12 width) */}
-        <div className="lg:col-span-5 bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] flex flex-col h-[480px]">
+        <div className="lg:col-span-5 card !p-5 flex flex-col h-[480px]">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Ongoing Delivery</h2>
-              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Active transit events</p>
+              <h2 className="text-sm font-bold text-ink dark:text-ink-dark uppercase tracking-wider">Ongoing Delivery</h2>
+              <p className="text-[10px] text-subtle dark:text-subtle-dark font-semibold mt-0.5">Active transit events</p>
             </div>
-            <button className="p-1.5 hover:bg-slate-50 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-700 transition-colors">
+            <button className="p-1.5 hover:bg-surface dark:hover:bg-white/5 border border-hairline dark:border-hairline-dark rounded-xl text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark transition-colors">
               <Filter className="w-4 h-4" />
             </button>
           </div>
@@ -383,8 +385,8 @@ export default function DashboardView({
           {/* List of ongoing deliveries */}
           <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-1">
             {devices.filter(d => d.status === 'active').length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-400 text-xs italic font-medium py-12">
-                <Truck className="w-8 h-8 mb-2 opacity-30 text-indigo-600" />
+              <div className="flex flex-col items-center justify-center h-full text-subtle dark:text-subtle-dark text-xs italic font-medium py-12">
+                <Truck className="w-8 h-8 mb-2 opacity-30 text-brand-500 dark:text-brand-400" />
                 <span>No vehicles currently active.</span>
               </div>
             ) : (
@@ -394,38 +396,38 @@ export default function DashboardView({
                   <div 
                     key={device.deviceId}
                     onClick={() => onDeviceSelect(device, true)}
-                    className="border border-slate-100 hover:border-indigo-200/80 rounded-2xl p-4 transition-all cursor-pointer bg-slate-50/20 hover:bg-indigo-50/5/10 group relative overflow-hidden"
+                    className="border border-hairline dark:border-hairline-dark hover:border-brand-300 dark:hover:border-brand-400/50 rounded-2xl p-4 transition-all cursor-pointer bg-surface/40 dark:bg-white/[0.02] hover:bg-brand-50/40 dark:hover:bg-brand-400/[0.06] group relative overflow-hidden"
                   >
-                    <div className="absolute top-0 right-0 w-1 h-full bg-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute top-0 right-0 w-1 h-full bg-brand-500 dark:bg-brand-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-bold text-slate-700 text-xs leading-tight">
+                        <h3 className="font-bold text-ink dark:text-ink-dark text-xs leading-tight">
                           {device.displayName || 'Unassigned Driver'}
                         </h3>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">#{device.deviceId}</p>
+                        <p className="text-[10px] text-subtle dark:text-subtle-dark font-mono mt-0.5">#{device.deviceId}</p>
                       </div>
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-green-50 border border-green-200 text-green-700">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
                         In Delivery
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100 text-left">
+                    <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-hairline dark:border-hairline-dark text-left">
                       <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Vehicle Name</p>
-                        <p className="text-xs font-bold text-slate-655 mt-0.5 truncate">
+                        <p className="text-[9px] text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Vehicle Name</p>
+                        <p className="text-xs font-bold text-muted dark:text-muted-dark mt-0.5 truncate">
                           {device.displayName || device.deviceId}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Vehicle Code</p>
-                        <p className="text-xs font-mono font-bold text-slate-655 mt-0.5 truncate">
+                        <p className="text-[9px] text-subtle dark:text-subtle-dark font-bold uppercase tracking-wider">Vehicle Code</p>
+                        <p className="text-xs font-mono font-bold text-muted dark:text-muted-dark mt-0.5 truncate">
                           {device.deviceId}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-3 bg-indigo-50/30 rounded-xl p-2 flex items-center justify-between text-[10px] font-bold text-indigo-650">
+                    <div className="mt-3 bg-brand-50/60 dark:bg-brand-400/10 rounded-xl p-2 flex items-center justify-between text-[10px] font-bold text-brand-600 dark:text-brand-300">
                       <div className="flex items-center space-x-1">
                         <MapPin className="w-3.5 h-3.5" />
                         <span>Route:</span>
@@ -441,24 +443,24 @@ export default function DashboardView({
       </div>
 
       {/* ── Bottom Section: Recent Shipment Table ── */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-[0_10px_35px_rgba(15,23,42,0.02)] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-50 pb-4">
+      <div className="card !p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline dark:border-hairline-dark pb-4">
           <div>
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Recent Shipment</h2>
-            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Status overview of all active fleet nodes</p>
+            <h2 className="text-sm font-bold text-ink dark:text-ink-dark uppercase tracking-wider">Recent Shipment</h2>
+            <p className="text-[10px] text-subtle dark:text-subtle-dark font-semibold mt-0.5">Status overview of all active fleet nodes</p>
           </div>
           <div className="flex items-center space-x-2">
-            <button className="flex items-center space-x-1.5 px-3.5 py-1.5 border border-slate-200 text-slate-550 rounded-xl hover:bg-slate-50 transition-colors text-xs font-bold shadow-sm">
+            <button className="flex items-center space-x-1.5 px-3.5 py-1.5 border border-hairline dark:border-hairline-dark text-muted dark:text-muted-dark rounded-xl hover:bg-surface dark:hover:bg-white/5 transition-colors text-xs font-bold shadow-sm">
               <Filter className="w-3.5 h-3.5" />
               <span>Filter</span>
             </button>
-            <button className="flex items-center space-x-1.5 px-3.5 py-1.5 border border-slate-200 text-slate-550 rounded-xl hover:bg-slate-50 transition-colors text-xs font-bold shadow-sm">
+            <button className="flex items-center space-x-1.5 px-3.5 py-1.5 border border-hairline dark:border-hairline-dark text-muted dark:text-muted-dark rounded-xl hover:bg-surface dark:hover:bg-white/5 transition-colors text-xs font-bold shadow-sm">
               <Download className="w-3.5 h-3.5" />
               <span>Export</span>
             </button>
             <button 
               onClick={onAddDevice}
-              className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-750 transition-colors text-xs font-bold shadow-sm"
+              className="btn-primary !px-3.5 !py-1.5 text-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add New Load</span>
@@ -467,12 +469,12 @@ export default function DashboardView({
         </div>
 
         {/* Table container */}
-        <div className="overflow-x-auto rounded-2xl border border-slate-100">
+        <div className="overflow-x-auto rounded-2xl border border-hairline dark:border-hairline-dark">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/70 text-slate-400 text-[10px] uppercase tracking-wider font-extrabold border-b border-slate-100">
+              <tr className="bg-surface dark:bg-white/[0.03] text-subtle dark:text-subtle-dark text-[10px] uppercase tracking-wider font-extrabold border-b border-hairline dark:border-hairline-dark">
                 <th className="py-3 px-4 w-12 text-center">
-                  <input type="checkbox" className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" />
+                  <input type="checkbox" className="w-4 h-4 text-brand-500 border-hairline dark:border-hairline-dark rounded focus:ring-brand-500/30 cursor-pointer" />
                 </th>
                 <th className="py-3 px-4">Vehicle Code</th>
                 <th className="py-3 px-4">Driver</th>
@@ -482,10 +484,10 @@ export default function DashboardView({
                 <th className="py-3 px-4">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/60">
+            <tbody className="divide-y divide-hairline/60 dark:divide-hairline-dark/60">
               {devices.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 text-xs italic font-medium">
+                  <td colSpan={7} className="py-8 text-center text-subtle dark:text-subtle-dark text-xs italic font-medium">
                     No registered devices found.
                   </td>
                 </tr>
@@ -498,19 +500,19 @@ export default function DashboardView({
                     : '---';
 
                   let statusBadge = (
-                    <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-slate-50 border border-slate-200 text-slate-400">
+                    <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-surface dark:bg-white/5 border border-hairline dark:border-hairline-dark text-subtle dark:text-subtle-dark">
                       Inactive
                     </span>
                   );
                   if (device.status === 'active') {
                     statusBadge = (
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-green-50 border border-green-200 text-green-700">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400">
                         In Delivery
                       </span>
                     );
                   } else if (device.status === 'maintenance') {
                     statusBadge = (
-                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-amber-50 border border-amber-200 text-amber-700">
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400">
                         In Repair
                       </span>
                     );
@@ -520,25 +522,27 @@ export default function DashboardView({
                     <tr 
                       key={device.deviceId}
                       onClick={() => onDeviceSelect(device, true)}
-                      className="hover:bg-slate-50/50 transition-colors cursor-pointer"
+                      className="hover:bg-surface/70 dark:hover:bg-white/[0.03] transition-colors cursor-pointer"
                     >
                       <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                         <input 
                           type="checkbox" 
                           checked={isChecked}
                           onChange={() => setSelectedDashboardDevice(device)}
-                          className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer" 
+                          className="w-4 h-4 text-brand-500 border-hairline dark:border-hairline-dark rounded focus:ring-brand-500/30 cursor-pointer" 
                         />
                       </td>
-                      <td className="py-3 px-4 font-mono font-bold text-xs text-slate-700">{device.deviceId}</td>
-                      <td className="py-3 px-4 font-bold text-xs text-slate-700">{device.displayName || 'Unassigned'}</td>
-                      <td className="py-3 px-4 font-semibold text-xs text-slate-500">{activeTime}</td>
-                      <td className="py-3 px-4 font-semibold text-xs text-slate-500">
+                      <td className="py-3 px-4 font-mono font-bold text-xs text-ink dark:text-ink-dark">{device.deviceId}</td>
+                      <td className="py-3 px-4 font-bold text-xs text-ink dark:text-ink-dark">{device.displayName || 'Unassigned'}</td>
+                      <td className="py-3 px-4 font-semibold text-xs text-muted dark:text-muted-dark">{activeTime}</td>
+                      <td className="py-3 px-4 font-semibold text-xs text-muted dark:text-muted-dark">
                         {device.status === 'active' ? 'Active' : '---'}
                       </td>
-                      <td className="py-3 px-4 text-xs font-bold text-indigo-650 flex items-center space-x-1 mt-1.5">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span>{routeName}</span>
+                      <td className="py-3 px-4 text-xs font-bold text-brand-600 dark:text-brand-400">
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span>{routeName}</span>
+                        </div>
                       </td>
                       <td className="py-3 px-4">{statusBadge}</td>
                     </tr>

@@ -1,13 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MapPin, Trash2, Plus, Edit2, Eye, AlertCircle, CheckCircle } from 'lucide-react';
-import {
-  ListGeofencesCommand,
-  BatchDeleteGeofenceCommand,
-  PutGeofenceCommand,
-} from "@aws-sdk/client-location";
 import { GEOFENCE } from "../../configuration";
+import { geofenceApi } from '../../api/deviceApi';
 
-const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient }) => {
+const GeofenceManagement = () => {
   const [geofences, setGeofences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedGeofences, setSelectedGeofences] = useState([]);
@@ -16,15 +12,10 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
   const [stats, setStats] = useState({ total: 0, active: 0 });
 
   // Fetch all geofences
-  const fetchGeofences = async () => {
-    if (!readOnlyLocationClient) return;
-
+  const fetchGeofences = useCallback(async () => {
     setLoading(true);
     try {
-      const command = new ListGeofencesCommand({
-        CollectionName: GEOFENCE,
-      });
-      const response = await readOnlyLocationClient.send(command);
+      const response = await geofenceApi.list();
       setGeofences(response.Entries || []);
       setStats({
         total: response.Entries?.length || 0,
@@ -35,11 +26,11 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchGeofences();
-  }, [readOnlyLocationClient]);
+  }, [fetchGeofences]);
 
   // Handle selection
   const handleSelectGeofence = (geofenceId) => {
@@ -69,11 +60,7 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
     }
 
     try {
-      const command = new BatchDeleteGeofenceCommand({
-        CollectionName: GEOFENCE,
-        GeofenceIds: selectedGeofences,
-      });
-      await writeOnlyLocationClient.send(command);
+      await geofenceApi.delete(selectedGeofences);
       setSelectedGeofences([]);
       fetchGeofences();
     } catch (error) {
@@ -106,8 +93,8 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
     <div className="space-y-6">
       {/* Page Title */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Geofence Management</h1>
-        <p className="text-sm text-gray-600 mt-1">Manage and monitor your geofence zones</p>
+        <h1 className="text-2xl font-bold text-ink dark:text-ink-dark">Geofence Management</h1>
+        <p className="text-sm text-muted dark:text-muted-dark mt-1">Manage and monitor your geofence zones</p>
       </div>
 
       {/* Stats Cards */}
@@ -115,23 +102,11 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Geofences</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
+              <p className="text-sm text-muted dark:text-muted-dark">Total Geofences</p>
+              <p className="text-3xl font-bold text-ink dark:text-ink-dark mt-1">{stats.total}</p>
             </div>
-            <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center">
-              <MapPin className="w-6 h-6 text-indigo-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Active</p>
-              <p className="text-3xl font-bold text-green-600 mt-1">{stats.active}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 bg-brand-50 dark:bg-brand-400/10 rounded-xl flex items-center justify-center">
+              <MapPin className="w-6 h-6 text-brand-600 dark:text-brand-400" />
             </div>
           </div>
         </div>
@@ -139,11 +114,23 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Selected</p>
-              <p className="text-3xl font-bold text-blue-600 mt-1">{selectedGeofences.length}</p>
+              <p className="text-sm text-muted dark:text-muted-dark">Active</p>
+              <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{stats.active}</p>
             </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-lg flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted dark:text-muted-dark">Selected</p>
+              <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-1">{selectedGeofences.length}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/10 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
@@ -180,24 +167,24 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
 
       {/* Geofences List */}
       <div className="card">
-        <div className="border-b border-gray-200 pb-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
+        <div className="border-b border-hairline dark:border-hairline-dark pb-4 mb-4">
+          <h2 className="text-lg font-semibold text-ink dark:text-ink-dark">
             Geofences List
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Collection: <span className="font-medium">{GEOFENCE}</span>
+          <p className="text-sm text-muted dark:text-muted-dark mt-1">
+            Collection: <span className="font-medium text-ink dark:text-ink-dark">{GEOFENCE}</span>
           </p>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 dark:border-brand-400"></div>
           </div>
         ) : geofences.length === 0 ? (
           <div className="text-center py-12">
-            <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium mb-2">No geofences yet</p>
-            <p className="text-sm text-gray-500 mb-4">
+            <MapPin className="w-16 h-16 text-hairline dark:text-hairline-dark mx-auto mb-4" />
+            <p className="text-ink dark:text-ink-dark font-medium mb-2">No geofences yet</p>
+            <p className="text-sm text-subtle dark:text-subtle-dark mb-4">
               Create your first geofence to start tracking devices
             </p>
             <button
@@ -211,28 +198,28 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                <tr className="border-b border-hairline dark:border-hairline-dark">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted dark:text-muted-dark">
                     <input
                       type="checkbox"
                       checked={selectedGeofences.length === geofences.length}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                      className="w-4 h-4 text-brand-500 border-hairline dark:border-hairline-dark rounded focus:ring-brand-500/30"
                     />
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted dark:text-muted-dark">
                     Geofence Name
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted dark:text-muted-dark">
                     Points
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted dark:text-muted-dark">
                     Area (approx)
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted dark:text-muted-dark">
                     Created Date
                   </th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted dark:text-muted-dark">
                     Actions
                   </th>
                 </tr>
@@ -241,37 +228,37 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
                 {geofences.map((geofence) => (
                   <tr
                     key={geofence.GeofenceId}
-                    className="border-b border-slate-100 hover:bg-slate-50/50"
+                    className="border-b border-hairline/60 dark:border-hairline-dark/60 hover:bg-surface/70 dark:hover:bg-white/[0.03]"
                   >
                     <td className="py-3 px-4">
                       <input
                         type="checkbox"
                         checked={selectedGeofences.includes(geofence.GeofenceId)}
                         onChange={() => handleSelectGeofence(geofence.GeofenceId)}
-                        className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500"
+                        className="w-4 h-4 text-brand-500 border-hairline dark:border-hairline-dark rounded focus:ring-brand-500/30"
                       />
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
-                        <MapPin className="w-4 h-4 text-indigo-600" />
-                        <span className="font-semibold text-slate-800">
+                        <MapPin className="w-4 h-4 text-brand-500 dark:text-brand-400" />
+                        <span className="font-semibold text-ink dark:text-ink-dark">
                           {geofence.GeofenceId}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-600">
+                    <td className="py-3 px-4 text-sm text-muted dark:text-muted-dark">
                       {formatCoordinates(geofence.Geometry?.Polygon)}
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-650">
+                    <td className="py-3 px-4 text-sm text-muted dark:text-muted-dark">
                       {calculateArea(geofence.Geometry?.Polygon).toFixed(6)} km²
                     </td>
-                    <td className="py-3 px-4 text-sm text-slate-500">
+                    <td className="py-3 px-4 text-sm text-subtle dark:text-subtle-dark">
                       {new Date(geofence.CreateTime).toLocaleString('en-US')}
                     </td>
                     <td className="py-3 px-4">
                       <button
                         onClick={() => setViewGeofence(geofence)}
-                        className="text-indigo-600 hover:text-indigo-800"
+                        className="text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300"
                         title="View details"
                       >
                         <Eye className="w-5 h-5" />
@@ -288,7 +275,6 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
       {/* Add Geofence Modal */}
       {showAddModal && (
         <AddGeofenceModal
-          writeOnlyLocationClient={writeOnlyLocationClient}
           onClose={() => setShowAddModal(false)}
           onSuccess={() => {
             setShowAddModal(false);
@@ -309,7 +295,7 @@ const GeofenceManagement = ({ readOnlyLocationClient, writeOnlyLocationClient })
 };
 
 // Add Geofence Modal Component
-const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
+const AddGeofenceModal = ({ onClose, onSuccess }) => {
   const [geofenceName, setGeofenceName] = useState('');
   const [coordinates, setCoordinates] = useState('');
   const [loading, setLoading] = useState(false);
@@ -372,15 +358,12 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
         }
       }
 
-      const command = new PutGeofenceCommand({
-        CollectionName: GEOFENCE,
-        GeofenceId: geofenceName,
-        Geometry: {
-          Polygon: [coordArray],
-        },
-      });
-
-      await writeOnlyLocationClient.send(command);
+      const first = coordArray[0];
+      const last = coordArray[coordArray.length - 1];
+      const polygon = first[0] === last[0] && first[1] === last[1]
+        ? coordArray
+        : [...coordArray, [...first]];
+      await geofenceApi.put(geofenceName, polygon);
       onSuccess();
     } catch (err) {
       console.error('Failed to add geofence:', err);
@@ -391,22 +374,22 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-aws-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Add New Geofence</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card dark:bg-card-dark rounded-lg shadow-panel-lg dark:shadow-panel-lg-dark max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-hairline dark:border-hairline-dark">
+        <div className="p-6 border-b border-hairline dark:border-hairline-dark">
+          <h2 className="text-xl font-semibold text-ink dark:text-ink-dark">Add New Geofence</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800">{error}</p>
+            <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 rounded-lg p-4 flex items-start space-x-3">
+              <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-rose-800 dark:text-rose-300">{error}</p>
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-2">
               Geofence Name *
             </label>
             <input
@@ -426,8 +409,8 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
                 type="button"
                 onClick={() => setInputMethod('manual')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${inputMethod === 'manual'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-brand-500 dark:bg-brand-400 text-white dark:text-[#16161b]'
+                    : 'bg-surface dark:bg-white/5 text-muted dark:text-muted-dark hover:bg-card-muted dark:hover:bg-white/10'
                   }`}
               >
                 Manual Input
@@ -436,8 +419,8 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
                 type="button"
                 onClick={() => setInputMethod('template')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${inputMethod === 'template'
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    ? 'bg-brand-500 dark:bg-brand-400 text-white dark:text-[#16161b]'
+                    : 'bg-surface dark:bg-white/5 text-muted dark:text-muted-dark hover:bg-card-muted dark:hover:bg-white/10'
                   }`}
               >
                 Use Template
@@ -446,7 +429,7 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
 
             {inputMethod === 'template' && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-2">
                   Select Geofence Template
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -466,7 +449,7 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-2">
               Coordinates (JSON Array) *
             </label>
             <textarea
@@ -477,16 +460,16 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
               className="input-field font-mono text-sm"
               disabled={loading}
             />
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-subtle dark:text-subtle-dark mt-2">
               Enter coordinate array in format: [[lng, lat], [lng, lat], ...]
               <br />
               Geofence must have at least 3 points and first point must match the last point.
             </p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800 font-medium mb-2">💡 Tips:</p>
-            <ul className="text-xs text-blue-900 space-y-1">
+          <div className="bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/30 rounded-lg p-4">
+            <p className="text-sm text-blue-800 dark:text-blue-300 font-medium mb-2">💡 Tips:</p>
+            <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1">
               <li>• Use "Use Template" tab to select predefined zones</li>
               <li>• Or go to "Map" tab to draw geofence directly on the map</li>
               <li>• Hanoi coordinates: lng ≈ 105.8, lat ≈ 21.0</li>
@@ -519,51 +502,51 @@ const AddGeofenceModal = ({ writeOnlyLocationClient, onClose, onSuccess }) => {
 // View Geofence Modal Component
 const ViewGeofenceModal = ({ geofence, onClose }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-aws-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Geofence Details</h2>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-card dark:bg-card-dark rounded-lg shadow-panel-lg dark:shadow-panel-lg-dark max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-hairline dark:border-hairline-dark">
+        <div className="p-6 border-b border-hairline dark:border-hairline-dark">
+          <h2 className="text-xl font-semibold text-ink dark:text-ink-dark">Geofence Details</h2>
         </div>
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">
               Geofence Name
             </label>
-            <p className="text-gray-900">{geofence.GeofenceId}</p>
+            <p className="text-ink dark:text-ink-dark">{geofence.GeofenceId}</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">
               Created Date
             </label>
-            <p className="text-gray-900">
+            <p className="text-ink dark:text-ink-dark">
               {new Date(geofence.CreateTime).toLocaleString('en-US')}
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-1">
               Updated Date
             </label>
-            <p className="text-gray-900">
+            <p className="text-ink dark:text-ink-dark">
               {new Date(geofence.UpdateTime).toLocaleString('en-US')}
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-muted dark:text-muted-dark mb-2">
               Coordinates
             </label>
-            <div className="bg-gray-50 rounded-lg p-4 max-h-64 overflow-y-auto">
-              <pre className="text-xs text-gray-900 font-mono">
+            <div className="bg-surface dark:bg-white/5 rounded-lg p-4 max-h-64 overflow-y-auto">
+              <pre className="text-xs text-ink dark:text-ink-dark font-mono">
                 {JSON.stringify(geofence.Geometry?.Polygon, null, 2)}
               </pre>
             </div>
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex justify-end">
+        <div className="p-6 border-t border-hairline dark:border-hairline-dark flex justify-end">
           <button onClick={onClose} className="btn-primary">
             Close
           </button>

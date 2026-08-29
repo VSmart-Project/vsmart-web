@@ -4,7 +4,7 @@ const historyLineLayer = {
     id: 'device-history-line',
     type: 'line',
     paint: {
-        'line-color': '#4F46E5', // Indigo
+        'line-color': '#6664d8', // Brand indigo
         'line-width': 3,
         'line-opacity': 0.7,
     },
@@ -17,7 +17,7 @@ const historyPointsLayer = {
         'circle-radius': 3,
         'circle-color': '#ffffff',
         'circle-stroke-width': 2,
-        'circle-stroke-color': '#4338CA',
+        'circle-stroke-color': '#5451c4',
     },
 };
 

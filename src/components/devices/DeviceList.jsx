@@ -13,18 +13,18 @@ import ConfirmAntiTheftModal from './ConfirmAntiTheftModal';
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────
 
 const TYPE_CONFIG = {
-  truck: { label: 'Truck', Icon: Truck, color: 'text-orange-600 bg-orange-50' },
-  car: { label: 'Car', Icon: Car, color: 'text-blue-600 bg-blue-50' },
-  motorbike: { label: 'Motorbike', Icon: Bike, color: 'text-purple-600 bg-purple-50' },
-  van: { label: 'Van', Icon: Package, color: 'text-teal-600 bg-teal-50' },
-  bus: { label: 'Bus', Icon: Bus, color: 'text-green-600 bg-green-50' },
-  other: { label: 'Other', Icon: Package, color: 'text-gray-600 bg-gray-50' },
+  truck: { label: 'Truck', Icon: Truck, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10' },
+  car: { label: 'Car', Icon: Car, color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10' },
+  motorbike: { label: 'Motorbike', Icon: Bike, color: 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-400/10' },
+  van: { label: 'Van', Icon: Package, color: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10' },
+  bus: { label: 'Bus', Icon: Bus, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10' },
+  other: { label: 'Other', Icon: Package, color: 'text-muted dark:text-muted-dark bg-surface dark:bg-white/5' },
 };
 
 const STATUS_CONFIG = {
-  active: { label: 'Active', color: 'text-green-700 bg-green-50 border-green-200' },
-  inactive: { label: 'Inactive', color: 'text-gray-600 bg-gray-50 border-gray-200' },
-  maintenance: { label: 'Maintenance', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+  active: { label: 'Active', color: 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' },
+  inactive: { label: 'Inactive', color: 'text-muted dark:text-muted-dark bg-surface dark:bg-white/5 border-hairline dark:border-hairline-dark' },
+  maintenance: { label: 'Maintenance', color: 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30' },
 };
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────
@@ -43,11 +43,11 @@ const getOnlineStatus = (device) => {
 function UnregisteredBanner({ devices, onQuickRegister }) {
   if (!devices || devices.length === 0) return null;
   return (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+    <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-xl p-4 mb-4">
       <div className="flex items-start space-x-3">
-        <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-yellow-800">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
             {devices.length} device{devices.length > 1 ? 's are' : ' is'} sending data but not yet registered
           </p>
           <div className="flex flex-wrap gap-2 mt-2">
@@ -55,7 +55,7 @@ function UnregisteredBanner({ devices, onQuickRegister }) {
               <button
                 key={d.deviceId}
                 onClick={() => onQuickRegister(d.deviceId)}
-                className="inline-flex items-center px-2 py-1 rounded-lg bg-yellow-100 hover:bg-yellow-200 text-yellow-800 text-xs font-mono transition-colors border border-yellow-300"
+                className="inline-flex items-center px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-mono transition-colors border border-amber-300 dark:border-amber-500/40"
                 title="Click to register"
               >
                 <Plus className="w-3 h-3 mr-1" />
@@ -75,6 +75,8 @@ function AddressResolver({ position }) {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
   const lastFetchedPos = useRef(null);
+  const latitude = position[1];
+  const longitude = position[0];
 
   useEffect(() => {
     let isMounted = true;
@@ -82,16 +84,16 @@ function AddressResolver({ position }) {
       try {
         setLoading(true);
         // OpenStreetMap Nominatim Free API
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position[1]}&lon=${position[0]}&zoom=18&addressdetails=1`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
         const data = await res.json();
 
         let finalAddress = data.display_name || "Unknown location";
 
         if (isMounted) {
           setAddress(finalAddress);
-          lastFetchedPos.current = `${position[1]},${position[0]}`;
+          lastFetchedPos.current = `${latitude},${longitude}`;
         }
-      } catch (err) {
+      } catch {
         if (isMounted) setAddress("Cannot translate location");
       } finally {
         if (isMounted) setLoading(false);
@@ -100,11 +102,11 @@ function AddressResolver({ position }) {
 
     // If no address yet or device drastically moved
     let shouldFetch = false;
-    if (!address || !lastFetchedPos.current) {
+    if (!lastFetchedPos.current) {
       shouldFetch = true;
     } else {
       const [oldLat, oldLng] = lastFetchedPos.current.split(',').map(Number);
-      if (Math.abs(oldLat - position[1]) > 0.001 || Math.abs(oldLng - position[0]) > 0.001) {
+      if (Math.abs(oldLat - latitude) > 0.001 || Math.abs(oldLng - longitude) > 0.001) {
         shouldFetch = true;
       }
     }
@@ -114,13 +116,13 @@ function AddressResolver({ position }) {
     }
 
     return () => { isMounted = false; };
-  }, [position[1], position[0]]);
+  }, [latitude, longitude]);
 
   return (
-    <div className="flex items-start space-x-1.5 text-xs text-slate-600">
-      <MapPin className="w-3.5 h-3.5 text-indigo-600 mt-0.5 flex-shrink-0" />
+    <div className="flex items-start space-x-1.5 text-xs text-muted dark:text-muted-dark">
+      <MapPin className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400 mt-0.5 flex-shrink-0" />
       <span className="font-medium leading-tight" title={address || "Translating..."}>
-        {loading ? <span className="text-aws-gray-400 italic">Translating position...</span> : address}
+        {loading ? <span className="text-subtle dark:text-subtle-dark italic">Translating position...</span> : address}
       </span>
     </div>
   );
@@ -218,26 +220,26 @@ export default function DeviceList({
       {/* ── Header toolbar ── */}
       <div className="flex flex-wrap items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-800 flex items-center space-x-2">
-            <Navigation2 className="w-5 h-5 text-indigo-650" />
+          <h2 className="text-lg font-semibold text-ink dark:text-ink-dark flex items-center space-x-2">
+            <Navigation2 className="w-5 h-5 text-brand-500 dark:text-brand-400" />
             <span>Device Management</span>
           </h2>
-          <p className="text-sm text-aws-gray-500 mt-0.5 sm:ml-7">
-            {devices.length} registered · <span className={onlineCount > 0 ? "text-green-600" : ""}>{onlineCount} online</span>
+          <p className="text-sm text-muted dark:text-muted-dark mt-0.5 sm:ml-7">
+            {devices.length} registered · <span className={onlineCount > 0 ? "text-emerald-600 dark:text-emerald-400" : ""}>{onlineCount} online</span>
           </p>
         </div>
         <div className="flex items-center space-x-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end">
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="p-2 text-aws-gray-500 hover:text-aws-gray-700 hover:bg-aws-gray-100 rounded-lg transition-colors"
+            className="p-2 text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark hover:bg-surface dark:hover:bg-white/5 rounded-lg transition-colors"
             title="Refresh"
           >
             <RefreshCw className={clsx('w-4 h-4', loading && 'animate-spin')} />
           </button>
           <button
             onClick={() => openCreate()}
-            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-sm"
+            className="btn-primary"
           >
             <Plus className="w-4 h-4" />
             <span>Add Device</span>
@@ -254,19 +256,19 @@ export default function DeviceList({
       {/* ── Search + Filter bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="relative w-full sm:flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-aws-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-subtle dark:text-subtle-dark" />
           <input
             type="text"
             placeholder="Search by ID or name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            className="input-field pl-9"
           />
         </div>
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          className="input-field sm:w-48"
         >
           <option value="all">All statuses</option>
           <option value="active">Active</option>
@@ -277,27 +279,27 @@ export default function DeviceList({
 
       {/* ── Device Table ── */}
       {loading && devices.length === 0 ? (
-        <div className="flex items-center justify-center py-16 text-aws-gray-400">
+        <div className="flex items-center justify-center py-16 text-subtle dark:text-subtle-dark">
           <RefreshCw className="w-6 h-6 animate-spin mr-2" />
           <span>Loading devices...</span>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 text-center text-aws-gray-400 bg-white rounded-lg border border-aws-gray-200">
+        <div className="py-16 text-center text-subtle dark:text-subtle-dark bg-card dark:bg-card-dark rounded-2xl border border-hairline dark:border-hairline-dark">
           <Activity className="w-12 h-12 mx-auto mb-3 opacity-40" />
           {devices.length === 0 ? (
             <>
-              <p className="font-medium">No devices registered yet</p>
+              <p className="font-medium text-ink dark:text-ink-dark">No devices registered yet</p>
               <p className="text-sm mt-1">Click "Add Device" to register your first device</p>
             </>
           ) : (
-            <p className="font-medium">No devices match your search</p>
+            <p className="font-medium text-ink dark:text-ink-dark">No devices match your search</p>
           )}
         </div>
       ) : (
-        <div className="bg-white border border-slate-100/80 rounded-3xl shadow-[0_15px_40px_rgba(15,23,42,0.04)] overflow-hidden overflow-x-auto">
+        <div className="bg-card dark:bg-card-dark border border-hairline dark:border-hairline-dark rounded-3xl shadow-panel dark:shadow-panel-dark overflow-hidden overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/70 text-slate-400 text-[10px] uppercase tracking-wider font-extrabold border-b border-slate-100">
+              <tr className="bg-surface dark:bg-white/[0.03] text-subtle dark:text-subtle-dark text-[10px] uppercase tracking-wider font-extrabold border-b border-hairline dark:border-hairline-dark">
                 <th className="py-4 px-6">Device</th>
                 <th className="py-4 px-6">Status & Network</th>
                 <th className="py-4 px-6">Last Position</th>
@@ -305,7 +307,7 @@ export default function DeviceList({
                 <th className="py-4 px-6 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/60">
+            <tbody className="divide-y divide-hairline/60 dark:divide-hairline-dark/60">
               {filtered.map((device) => {
                 const online = getOnlineStatus(device);
                 const typeConf = TYPE_CONFIG[device.type] || TYPE_CONFIG.other;
@@ -318,8 +320,8 @@ export default function DeviceList({
                   <tr
                     key={device.deviceId}
                     className={clsx(
-                      "group hover:bg-slate-50/50 transition-all border-l-[3px] border-b border-slate-100/60",
-                      isSelected ? "border-indigo-650 bg-indigo-50/10" : "border-transparent"
+                      "group hover:bg-surface/70 dark:hover:bg-white/[0.03] transition-all border-l-[3px] border-b border-hairline/60 dark:border-hairline-dark/60",
+                      isSelected ? "border-brand-500 dark:border-brand-400 bg-brand-50/40 dark:bg-brand-400/[0.06]" : "border-transparent"
                     )}
                   >
 
@@ -330,10 +332,10 @@ export default function DeviceList({
                           <TypeIcon className="w-4 h-4" />
                         </div>
                         <div>
-                          <p className="font-bold text-slate-800 text-sm leading-tight">
+                          <p className="font-bold text-ink dark:text-ink-dark text-sm leading-tight">
                             {device.displayName || device.deviceId}
                           </p>
-                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">{device.deviceId}</p>
+                          <p className="text-[10px] text-subtle dark:text-subtle-dark font-mono mt-0.5">{device.deviceId}</p>
                         </div>
                       </div>
                     </td>
@@ -346,14 +348,14 @@ export default function DeviceList({
                         </span>
                         <div className="flex items-center space-x-1.5">
                           {online.color === 'green'
-                            ? <Wifi className="w-3.5 h-3.5 text-green-500" />
-                            : <WifiOff className="w-3.5 h-3.5 text-slate-400" />}
+                            ? <Wifi className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+                            : <WifiOff className="w-3.5 h-3.5 text-subtle dark:text-subtle-dark" />}
                           <span className={clsx(
                             "text-xs font-semibold",
-                            online.color === 'green' && 'text-green-600',
-                            online.color === 'yellow' && 'text-yellow-600',
-                            online.color === 'red' && 'text-red-500',
-                            online.color === 'gray' && 'text-slate-400',
+                            online.color === 'green' && 'text-emerald-600 dark:text-emerald-400',
+                            online.color === 'yellow' && 'text-amber-600 dark:text-amber-400',
+                            online.color === 'red' && 'text-rose-500 dark:text-rose-400',
+                            online.color === 'gray' && 'text-subtle dark:text-subtle-dark',
                           )}>
                             {online.text}
                           </span>
@@ -367,13 +369,13 @@ export default function DeviceList({
                         <div className="flex flex-col">
                           <AddressResolver position={device.position} />
                           {device.sampleTime && (
-                            <div className="text-[10px] text-slate-400 mt-1 ml-5 font-semibold">
+                            <div className="text-[10px] text-subtle dark:text-subtle-dark mt-1 ml-5 font-semibold">
                               Last seen: {new Date(device.sampleTime).toLocaleTimeString('en-US', { hour12: false })}
                             </div>
                           )}
                         </div>
                       ) : (
-                        <div className="flex items-center space-x-1.5 text-slate-400 text-xs italic font-medium">
+                        <div className="flex items-center space-x-1.5 text-subtle dark:text-subtle-dark text-xs italic font-medium">
                           <MapPin className="w-3 h-3" />
                           <span>No position data</span>
                         </div>
@@ -383,12 +385,12 @@ export default function DeviceList({
                     {/* Column: Protection */}
                     <td className="py-4 px-6 whitespace-nowrap cursor-pointer" onClick={() => onDeviceSelect(device)}>
                       {antitheftOn ? (
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] border border-red-200 bg-red-50 text-red-650 font-bold">
+                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold">
                           <ShieldAlert className="w-3.5 h-3.5 animate-pulse" />
                           <span>Shield Active</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] bg-slate-100 text-slate-400 font-bold">
+                        <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] bg-surface dark:bg-white/5 text-subtle dark:text-subtle-dark font-bold">
                           <Shield className="w-3.5 h-3.5" />
                           <span>Disabled</span>
                         </span>
@@ -403,8 +405,8 @@ export default function DeviceList({
                           className={clsx(
                             'p-2 rounded-xl transition-all',
                             antitheftOn
-                              ? 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                              : 'text-slate-450 hover:text-blue-600 hover:bg-blue-50/70'
+                              ? 'text-rose-500 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                              : 'text-muted dark:text-muted-dark hover:text-brand-600 dark:hover:text-brand-400 hover:bg-brand-50/70 dark:hover:bg-brand-400/10'
                           )}
                           title={antitheftOn ? 'Disable Shield' : 'Enable Shield'}
                         >
@@ -413,7 +415,7 @@ export default function DeviceList({
 
                         <button
                           onClick={(e) => { e.stopPropagation(); setFormModal({ open: true, device }); }}
-                          className="p-2 text-slate-450 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all"
+                          className="p-2 text-muted dark:text-muted-dark hover:text-ink dark:hover:text-ink-dark hover:bg-surface dark:hover:bg-white/5 rounded-xl transition-all"
                           title="Edit"
                         >
                           <Pencil className="w-4 h-4" />
@@ -421,7 +423,7 @@ export default function DeviceList({
 
                         <button
                           onClick={(e) => { e.stopPropagation(); setDeleteModal({ open: true, deviceId: device.deviceId }); }}
-                          className="p-2 text-slate-450 hover:text-red-650 hover:bg-red-50 rounded-xl transition-all"
+                          className="p-2 text-muted dark:text-muted-dark hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-all"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />

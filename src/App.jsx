@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Map, { NavigationControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import Header from './components/layout/Header';
@@ -10,18 +10,20 @@ import DeviceHistoryPathLayer from './components/map/DeviceHistoryPathLayer';
 import GeofencesLayer from './components/geofences/GeofencesLayer';
 import GeofenceManagement from './components/geofences/GeofenceManagement';
 import AuthLayout from './components/auth/AuthLayout';
+import LandingPage from './components/marketing/LandingPage';
 import DeviceDetailPanel from './components/map/DeviceDetailPanel';
 import DashboardView from './components/dashboard/DashboardView';
-import { AlertCircle, Loader2 } from 'lucide-react';
-import { getCurrentUser, signOut } from 'aws-amplify/auth';
-import { getAuthHelpers, createLocationClient } from './utils/aws';
+import { Loader2 } from 'lucide-react';
+import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { useDeviceManager } from './hooks/useDeviceManager';
 import { useDevicePolling } from './hooks/useDevicePolling';
+import { useTheme } from './hooks/useTheme.js';
 import { BACKEND_URL, REGION, MAP, API_KEY } from './configuration';
 import { io } from 'socket.io-client';
 import Toast from './components/common/Toast';
 
 function App() {
+  const { theme, setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 1024);
   const [activeView, setActiveView] = useState('dashboard');
   const [selectedDevice, setSelectedDevice] = useState(null);
@@ -33,16 +35,14 @@ function App() {
   useEffect(() => {
     selectedDeviceRef.current = selectedDevice;
   }, [selectedDevice]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [openedPanel, setOpenedPanel] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [mapStyle, setMapStyle] = useState(null);
   const [toast, setToast] = useState(null);
 
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [showAuthGate, setShowAuthGate] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -57,7 +57,7 @@ function App() {
 
   useEffect(() => {
     getCurrentUser()
-      .then((user) => {
+      .then(() => {
         setIsAuthenticated(true);
       })
       .catch(() => {
@@ -71,63 +71,15 @@ function App() {
   const mapRef = useRef(null);
   const [mapFocusPending, setMapFocusPending] = useState(null);
 
-  // AWS Clients
-  const [readOnlyLocationClient, setReadOnlyLocationClient] = useState(null);
-  const [writeOnlyLocationClient, setWriteOnlyLocationClient] = useState(null);
-  const [readOnlyAuthHelper, setReadOnlyAuthHelper] = useState(null);
-
-  // Initialize AWS SDK
-  useEffect(() => {
-    const initializeAWS = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Get auth helpers
-        const authHelpers = await getAuthHelpers();
-
-        console.log('Auth helpers initialized:', authHelpers);
-        console.log('ReadOnly auth helper:', authHelpers.readOnlyAuthHelper);
-        console.log('Transform request function:', authHelpers.readOnlyAuthHelper?.transformRequest);
-
-        // Get credentials
-        const readOnlyCredentials = authHelpers.readOnlyAuthHelper.getLocationClientConfig();
-        const writeOnlyCredentials = authHelpers.writeOnlyAuthHelper.getLocationClientConfig();
-
-        // Create clients
-        setReadOnlyLocationClient(createLocationClient(readOnlyCredentials));
-        setWriteOnlyLocationClient(createLocationClient(writeOnlyCredentials));
-
-        // Store auth helper for map
-        setReadOnlyAuthHelper(authHelpers.readOnlyAuthHelper);
-
-        // Set map style URL - use the correct AWS Location Service format
-        const styleUrl = `https://maps.geo.${REGION}.amazonaws.com/maps/v0/maps/${MAP.STYLE}/style-descriptor`;
-        console.log('Map style URL:', styleUrl);
-        setMapStyle(styleUrl);
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Failed to initialize AWS:', err);
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    initializeAWS();
-  }, []);
-
   // ── Device Manager (calls Backend REST API) ──
   const {
     devices,
     unregisteredDevices,
     loading: devicesLoading,
-    error: devicesError,
     fetchDevices,
     createDevice,
     updateDevice,
     deleteDevice,
-    updateDevicePosition,
     applyRealtimeEvent,
   } = useDeviceManager();
 
@@ -141,25 +93,18 @@ function App() {
     if (!isAuthenticated) return;
 
     console.log('🔌 Connecting to backend Socket.io server at:', BACKEND_URL);
-    const socket = io(BACKEND_URL);
+    let socket;
 
-    socket.on('connect', () => {
+    fetchAuthSession().then((session) => {
+      const token = session.tokens?.idToken?.toString();
+      if (!token) throw new Error('Missing ID token');
+      socket = io(BACKEND_URL, { auth: { token } });
+
+      socket.on('connect', () => {
       console.log('✅ Connected to Socket.io server with ID:', socket.id);
-      
-      // Join targeted user room
-      getCurrentUser()
-        .then((user) => {
-          const userId = user.userId || user.username;
-          if (userId) {
-            socket.emit('join-room', userId);
-          }
-        })
-        .catch((err) => {
-          console.warn('Failed to fetch user info for socket room:', err);
-        });
-    });
+      });
 
-    socket.on('realtime-event', (event) => {
+      socket.on('realtime-event', (event) => {
       console.log('📦 Received realtime event:', event);
       const processed = applyRealtimeEvent(event);
       
@@ -201,14 +146,21 @@ function App() {
         const msg = event.payload?.message || `Thiết bị ${event.deviceId} ${transition} vùng giám sát ${event.payload?.geofenceId || ''}`;
         setToast({ message: `${title}: ${msg}`, type: event.type === 'antitheft.breach' ? 'error' : 'info' });
       }
-    });
+      });
 
-    socket.on('disconnect', () => {
+      socket.on('disconnect', () => {
       console.log('❌ Disconnected from Socket.io server');
+      });
+
+      socket.on('connect_error', (socketError) => {
+        console.error('Socket authentication failed:', socketError.message);
+      });
+    }).catch((sessionError) => {
+      console.error('Could not start realtime connection:', sessionError);
     });
 
     return () => {
-      socket.disconnect();
+      socket?.disconnect();
     };
   }, [isAuthenticated, applyRealtimeEvent]);
 
@@ -275,13 +227,13 @@ function App() {
     setOpenedPanel(panel);
   };
 
-  if (loading || isAuthChecking) {
+  if (isAuthChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-aws-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface dark:bg-surface-dark">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-aws-orange animate-spin mx-auto mb-4" />
-          <p className="text-gray-900 font-medium">Loading application...</p>
-          <p className="text-sm text-gray-600 mt-2">Connecting to secure services</p>
+          <Loader2 className="w-10 h-10 text-brand-500 dark:text-brand-400 animate-spin mx-auto mb-4" />
+          <p className="text-ink dark:text-ink-dark font-medium">Loading application...</p>
+          <p className="text-sm text-muted dark:text-muted-dark mt-2">Connecting to secure services</p>
         </div>
       </div>
     );
@@ -290,46 +242,19 @@ function App() {
   // --- MÀN HÌNH ĐĂNG NHẬP SẼ KIỂM TRA TRƯỚC ---
   // Để người dùng vẫn có thể xem được giao diện Đăng Nhập/Đăng ký khi chưa cấu hình xong Map/Identity Pool
   if (!isAuthenticated) {
+    if (!showAuthGate) {
+      return <LandingPage onGetStarted={() => setShowAuthGate(true)} />;
+    }
     return (
-      <AuthLayout onLoginSuccess={() => setIsAuthenticated(true)} />
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-aws-gray-50 p-4 relative">
-        <div className="absolute top-6 right-6">
-          <button
-            onClick={async () => {
-              try { await signOut(); setIsAuthenticated(false); } catch (e) { }
-            }}
-            className="px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-100 font-medium shadow-card transition-colors border border-gray-300"
-          >
-            Đăng xuất
-          </button>
-        </div>
-
-        <div className="max-w-md w-full bg-white rounded-lg shadow-card p-6 border border-gray-200">
-          <div className="flex items-center space-x-3 text-red-600 mb-4">
-            <AlertCircle className="w-6 h-6" />
-            <h2 className="text-lg font-semibold text-gray-900">Lỗi cấu hình AWS AWS Location/IoT</h2>
-          </div>
-          <p className="text-gray-700 mb-4 text-sm">{error}</p>
-          <div className="bg-gray-50 rounded-lg p-4 text-sm border border-gray-200">
-            <p className="font-medium text-gray-900 mb-2">Bạn cần hoàn tất cấu hình:</p>
-            <ol className="list-decimal list-inside space-y-1 text-gray-700">
-              <li>Deploy thư mục <b>tracking-data-streaming-infrastructure</b> trên AWS.</li>
-              <li>Chép Identity Pool, IoT Endpoint vào <b>configuration.js</b>.</li>
-              <li>Khởi động lại trang web.</li>
-            </ol>
-          </div>
-        </div>
-      </div>
+      <AuthLayout
+        onLoginSuccess={() => setIsAuthenticated(true)}
+        onBack={() => setShowAuthGate(false)}
+      />
     );
   }
 
   return (
-    <div className="h-screen w-screen flex bg-slate-50 overflow-hidden text-slate-800">
+    <div className="h-screen w-screen flex bg-surface dark:bg-surface-dark overflow-hidden text-ink dark:text-ink-dark">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -341,7 +266,6 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         <Header
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-          title="VSmart Tracking"
           onLogout={async () => {
             try {
               await signOut();
@@ -384,7 +308,7 @@ function App() {
                   latitude: 21.028511,
                   zoom: 13,
                 }}
-                mapStyle={`https://maps.geo.${REGION}.amazonaws.com/v2/styles/${MAP.STYLE}/descriptor?key=${API_KEY}&color-scheme=${MAP.COLOR_SCHEME}`}
+                mapStyle={`https://maps.geo.${REGION}.amazonaws.com/v2/styles/${MAP.STYLE}/descriptor?key=${API_KEY}&color-scheme=${theme === 'dark' ? 'Dark' : 'Light'}`}
                 maxZoom={18}
                 validateStyle={false}
               >
@@ -398,8 +322,6 @@ function App() {
 
                 {/* Geofences Layer */}
                 <GeofencesLayer
-                  readOnlyLocationClient={readOnlyLocationClient}
-                  writeOnlyLocationClient={writeOnlyLocationClient}
                   isOpenedPanel={openedPanel === 'geofences'}
                   onPanelChange={handlePanelChange}
                   isDrawing={isDrawing}
@@ -467,10 +389,7 @@ function App() {
           {activeView === 'geofences' && (
             <div className="h-full overflow-y-auto p-4 md:p-6 w-full">
               <div className="w-full">
-                <GeofenceManagement
-                  readOnlyLocationClient={readOnlyLocationClient}
-                  writeOnlyLocationClient={writeOnlyLocationClient}
-                />
+                <GeofenceManagement />
               </div>
             </div>
           )}
@@ -479,38 +398,66 @@ function App() {
 
           {activeView === 'settings' && (
             <div className="h-full overflow-y-auto p-4 md:p-6 w-full">
-              <div className="w-full">
-                <h1 className="text-2xl font-bold text-gray-900 mb-6">
+              <div className="w-full max-w-2xl space-y-6">
+                <h1 className="text-2xl font-bold text-ink dark:text-ink-dark">
                   Settings
                 </h1>
+
                 <div className="card">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  <h2 className="text-base font-semibold text-ink dark:text-ink-dark mb-1">
+                    Appearance
+                  </h2>
+                  <p className="text-sm text-muted dark:text-muted-dark mb-4">
+                    Choose how VSmart Tracking looks on this device.
+                  </p>
+                  <div className="flex gap-3">
+                    {[
+                      { id: 'light', label: 'Light' },
+                      { id: 'dark', label: 'Dark' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setTheme(opt.id)}
+                        className={
+                          theme === opt.id
+                            ? 'flex-1 rounded-xl border-2 border-brand-500 dark:border-brand-400 bg-brand-50 dark:bg-brand-400/10 px-4 py-3 text-sm font-semibold text-brand-600 dark:text-brand-300 transition-colors'
+                            : 'flex-1 rounded-xl border border-hairline dark:border-hairline-dark bg-card dark:bg-white/5 px-4 py-3 text-sm font-medium text-muted dark:text-muted-dark hover:bg-surface dark:hover:bg-white/10 transition-colors'
+                        }
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h2 className="text-base font-semibold text-ink dark:text-ink-dark mb-4">
                     AWS Configuration
                   </h2>
                   <div className="space-y-4 text-sm">
                     <div>
-                      <label className="block text-gray-700 font-medium mb-1">
+                      <label className="block text-muted dark:text-muted-dark font-medium mb-1.5">
                         Region
                       </label>
                       <input
                         type="text"
-                        value="us-east-1"
+                        value={REGION}
                         disabled
-                        className="input-field bg-gray-100"
+                        className="input-field opacity-60 cursor-not-allowed"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-700 font-medium mb-1">
+                      <label className="block text-muted dark:text-muted-dark font-medium mb-1.5">
                         Tracker Name
                       </label>
                       <input
                         type="text"
                         value="TrackingDATN-Tracker"
                         disabled
-                        className="input-field bg-gray-100"
+                        className="input-field opacity-60 cursor-not-allowed"
                       />
                     </div>
-                    <p className="text-gray-600 text-xs mt-4">
+                    <p className="text-subtle dark:text-subtle-dark text-xs mt-2">
                       To update configuration, edit src/configuration.js
                     </p>
                   </div>

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 // Easing function for smooth movement
 const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-const SmoothMarker = ({ device, deviceId, targetPos, statusColor, onClick }) => {
+const SmoothMarker = ({ deviceId, targetPos, statusColor, onClick }) => {
   const [currentPos, setCurrentPos] = useState(targetPos);
   const startPosRef = useRef(targetPos);
   const startTimeRef = useRef(null);
@@ -71,7 +71,7 @@ const SmoothMarker = ({ device, deviceId, targetPos, statusColor, onClick }) => 
         >
           <Navigation2 className="w-5 h-5 text-white" />
         </div>
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-white rounded shadow-md text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 text-slate-700">
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-card dark:bg-card-dark border border-hairline dark:border-hairline-dark rounded shadow-md text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 text-ink dark:text-ink-dark">
           {deviceId}
         </div>
       </div>
@@ -109,7 +109,6 @@ const DeviceMarkers = ({ devices = [], onDeviceClick }) => {
         return (
           <SmoothMarker
             key={deviceId}
-            device={device}
             deviceId={deviceId}
             targetPos={position}
             statusColor={statusColor}
