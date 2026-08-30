@@ -71,7 +71,7 @@ function Logo() {
       <span className={`grid size-7 place-items-center rounded-md ${PRIMARY_BG}`}>
         <Lightning className="size-4 text-white" weight="fill" />
       </span>
-      <span className={`font-semibold tracking-tight ${TEXT}`}>VSmart</span>
+      <span className={`font-semibold tracking-tight ${TEXT}`}>Vsmart</span>
     </div>
   );
 }
@@ -110,7 +110,7 @@ function Hero({ onGetStarted }) {
           </h1>
 
           <p className={`mt-5 max-w-md text-[15px] leading-7 ${MUTED}`}>
-            VSmart Tracking shows your vehicle's exact position live and
+            Vsmart Tracking shows your vehicle's exact position live and
             alerts you the instant it leaves a protected zone.
           </p>
 
@@ -363,7 +363,7 @@ function Footer() {
   return (
     <footer className={`py-8 text-center ${SURFACE}`}>
       <p className={`text-xs ${MUTED}`}>
-        VSmart Tracking. A graduation project, built on real AWS infrastructure.
+        Vsmart Tracking. A graduation project, built on real AWS infrastructure.
       </p>
     </footer>
   );

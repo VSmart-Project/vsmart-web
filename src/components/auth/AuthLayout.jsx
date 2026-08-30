@@ -89,7 +89,7 @@ export default function AuthLayout({ onLoginSuccess, onBack }) {
                             <Lightning className="size-6 text-white dark:text-[#16161b]" weight="fill" />
                         </span>
                         <h1 className="text-2xl font-bold text-ink dark:text-ink-dark tracking-tight">
-                            VSmart
+                            Vsmart
                         </h1>
                     </div>
 

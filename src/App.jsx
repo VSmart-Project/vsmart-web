@@ -426,7 +426,7 @@ function App() {
                     Appearance
                   </h2>
                   <p className="text-sm text-muted dark:text-muted-dark mb-4">
-                    Choose how VSmart Tracking looks on this device.
+                    Choose how Vsmart Tracking looks on this device.
                   </p>
                   <div className="flex gap-3">
                     {[
@@ -470,7 +470,7 @@ function App() {
                       </label>
                       <input
                         type="text"
-                        value="TrackingDATN-Tracker"
+                        value="Vsmart-Tracker"
                         disabled
                         className="input-field opacity-60 cursor-not-allowed"
                       />

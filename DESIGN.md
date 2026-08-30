@@ -1,5 +1,5 @@
 ---
-name: VSmart Tracking
+name: Vsmart Tracking
 description: Real-time vehicle tracking and anti-theft dashboard — a calm, muted-indigo SaaS system with unified light and dark modes
 colors:
   surface-light: "#f6f7f9"
@@ -52,7 +52,7 @@ components:
     shadowDark: "0 16px 50px rgba(0,0,0,0.24)"
 ---
 
-# Design System: VSmart Tracking
+# Design System: Vsmart Tracking
 
 ## Overview
 

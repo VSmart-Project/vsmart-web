@@ -16,7 +16,7 @@ export const COGNITO = {
 export const REGION = import.meta.env.VITE_AWS_REGION;
 export const API_KEY = import.meta.env.VITE_MAP_API_KEY;
 
-export const GEOFENCE = import.meta.env.VITE_GEOFENCE_COLLECTION || "TrackingDATN-GeofenceCollection";
+export const GEOFENCE = import.meta.env.VITE_GEOFENCE_COLLECTION || "Vsmart-GeofenceCollection";
 
 // Map Configuration
 export const MAP = {

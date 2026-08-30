@@ -53,7 +53,7 @@ export default function Sidebar({ isOpen, onClose, activeView, onViewChange, onT
               </div>
               {isOpen && (
                 <span className="text-lg font-black text-ink dark:text-ink-dark tracking-tight animate-fade-in">
-                  VSmart
+                  Vsmart
                 </span>
               )}
             </div>

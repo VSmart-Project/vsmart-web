@@ -6,7 +6,7 @@
 
 web
 
-Note: this product has a second, separate native surface — `vsmart-app/` (Expo/React Native, targeting iOS + Android). This root record's Platform value describes the web dashboard; scoped design work against `vsmart-app/` should treat platform as native and load iOS/Android guidance as needed.
+Note: this product has a second, separate native surface — `vsmart-mobile/` (Expo/React Native, targeting iOS + Android). This root record's Platform value describes the web dashboard; scoped design work against `vsmart-mobile/` should treat platform as native and load iOS/Android guidance as needed.
 
 ## Users
 
@@ -27,7 +27,7 @@ Three things a generic consumer GPS-tracker app can't truthfully claim:
 ## Operating Context
 
 - Owner registers a device (manual entry on web, or camera QR/barcode scan on mobile), views its live position on a map, draws/manages geofences, replays a chosen day's position history, and can enable one-tap anti-theft on a parked vehicle — all from either surface.
-- Two UI surfaces share one backend and one user identity: **web dashboard** (`tracking-data-streaming-datn/`, full feature set: Dashboard, Map View, Devices, Geofences, Settings) and **mobile companion app** (`vsmart-app/`, Expo/React Native, iOS + Android; adds camera-based device registration the web dashboard doesn't have).
+- Two UI surfaces share one backend and one user identity: **web dashboard** (`vsmart-web/`, full feature set: Dashboard, Map View, Devices, Geofences, Settings) and **mobile companion app** (`vsmart-mobile/`, Expo/React Native, iOS + Android; adds camera-based device registration the web dashboard doesn't have).
 - Runs on real AWS infrastructure in `ap-southeast-1` (Singapore); demo/simulator GPS data is centered on Ho Chi Minh City.
 - Auth via Amazon Cognito (sign up, sign in, email confirmation); device data is a merge of DynamoDB (metadata) and Amazon Location Service (live position, geofences).
 
@@ -41,9 +41,9 @@ Three things a generic consumer GPS-tracker app can't truthfully claim:
 
 ## Brand Commitments
 
-- Product name: **VSmart Tracking** (full), **VSmart** (short form, used as the web sidebar wordmark).
+- Product name: **Vsmart Tracking** (full), **Vsmart** (short form, used as the web sidebar wordmark).
 - Existing color identity (not yet unified into shared tokens — evidence, not a decided system): web dashboard's primary accent is Tailwind indigo (`indigo-600`, ≈ `#4F46E5`); mobile app uses a violet/purple accent (`#7C3AED`) for its notification icon and a dark navy (`#0B0F1A`) adaptive-icon background.
-- Existing logo: an abstract three-bar "waveform" glyph in an indigo-tinted rounded tile, used in the web sidebar. The mobile app icon is a separate asset (`vsmart-app/assets/icon.png`), not audited here.
+- Existing logo: an abstract three-bar "waveform" glyph in an indigo-tinted rounded tile, used in the web sidebar. The mobile app icon is a separate asset (`vsmart-mobile/assets/icon.png`), not audited here.
 - **Standing visual-world preference (confirmed):** after seeing a first oblique direction (a sewing-pattern-envelope world) built and reviewed, the user pinned the **category-standard consumer tracking/security-app look**, played straight at full craft, over any oblique metaphor — referencing **Life360, Apple Find My, and the Tesla app** as the craft bar. This means: a live map as the product's own visual center (not decorative), dark UI as the default surface, floating status cards/pills for live state, and the existing indigo/violet identity unified rather than replaced. Any future new-work round for this product should treat this as the committed world and skip re-rolling a different aesthetic unless the user asks again.
 
 ## Evidence on Hand

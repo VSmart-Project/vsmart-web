@@ -19,7 +19,7 @@
  *     off the road and back ("nhảy lung tung");
  *   - carries an eased heading so the icon rotates like a car, not a compass.
  *
- * NOTE: an identical copy lives at vsmart-app/src/realtime/smoothFollow.js —
+ * NOTE: an identical copy lives at vsmart-mobile/src/realtime/smoothFollow.js —
  * keep the two in sync.
  */
 
