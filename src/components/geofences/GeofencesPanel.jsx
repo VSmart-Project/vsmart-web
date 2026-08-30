@@ -29,10 +29,10 @@ const GeofencesPanel = ({
   };
 
   return (
-    <div className="absolute top-16 left-4 w-80 bg-card/95 dark:bg-card-dark/95 backdrop-blur-md rounded-2xl shadow-panel-lg dark:shadow-panel-lg-dark border border-hairline dark:border-hairline-dark z-10 overflow-hidden select-none">
+    <div className="absolute top-20 left-4 w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-6.5rem)] flex flex-col bg-card/95 dark:bg-card-dark/95 backdrop-blur-md rounded-2xl shadow-panel-lg dark:shadow-panel-lg-dark border border-hairline dark:border-hairline-dark z-10 overflow-hidden select-none animate-fade-in">
 
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-hairline dark:border-hairline-dark">
+      <div className="shrink-0 flex items-center justify-between px-4 py-3.5 border-b border-hairline dark:border-hairline-dark">
         <h2 className="text-xs font-bold text-ink dark:text-ink-dark uppercase tracking-wider">Geofences</h2>
         <button
           onClick={onClose}
@@ -43,7 +43,7 @@ const GeofencesPanel = ({
       </div>
 
       {/* ── Draw new geofence ── */}
-      <div className="px-4 py-3.5 border-b border-hairline dark:border-hairline-dark bg-surface/60 dark:bg-white/[0.02]">
+      <div className="shrink-0 px-4 py-3.5 border-b border-hairline dark:border-hairline-dark bg-surface/60 dark:bg-white/[0.02]">
         <p className="text-[10px] font-bold text-subtle dark:text-subtle-dark uppercase tracking-wider mb-2.5">
           Draw New Geofence
         </p>
@@ -66,7 +66,7 @@ const GeofencesPanel = ({
       </div>
 
       {/* ── Geofence list ── */}
-      <div className="p-4 max-h-72 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 min-h-0 p-4 overflow-y-auto custom-scrollbar">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 dark:border-brand-400"></div>
@@ -101,16 +101,18 @@ const GeofencesPanel = ({
             )}
           </div>
         ) : (
-          <div className="text-center py-6">
-            <CircleDot className="w-8 h-8 mx-auto mb-2 text-hairline dark:text-hairline-dark" />
+          <div className="flex flex-col items-center text-center py-8">
+            <div className="flex items-center justify-center w-11 h-11 rounded-full bg-surface dark:bg-white/5 mb-3">
+              <CircleDot className="w-5 h-5 text-subtle dark:text-subtle-dark" />
+            </div>
             <p className="text-xs font-bold text-muted dark:text-muted-dark">No geofences yet.</p>
-            <p className="text-[10px] text-subtle dark:text-subtle-dark mt-1 font-semibold">Use Polygon or Circle above to create one.</p>
+            <p className="text-[10px] text-subtle dark:text-subtle-dark mt-1 font-semibold max-w-[200px]">Use Polygon or Circle above to create one.</p>
           </div>
         )}
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-hairline dark:border-hairline-dark">
+      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-t border-hairline dark:border-hairline-dark">
         <button
           onClick={handleDeleteGeofences}
           disabled={selectedItems.length === 0}

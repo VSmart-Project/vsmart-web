@@ -106,6 +106,11 @@ export function applyRealtimeEventToDevices(devices, event) {
         isOnline: payload.isOnline ?? true,
         antitheftEnabled: payload.antitheftEnabled,
         positionProperties: payload.positionProperties,
+        // smoothing metadata (see realtime/smoothFollow.js)
+        serverTs: payload.serverTs ?? null,
+        fixSeq: payload.fixSeq ?? null,
+        correction: payload.correction ?? false,
+        pathFromPrev: payload.pathFromPrev ?? null,
       });
     }
 

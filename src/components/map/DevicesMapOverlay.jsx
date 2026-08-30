@@ -25,23 +25,9 @@ export default function DevicesMapOverlay({
 }) {
     return (
         <>
-            {/* Devices toggle button */}
-            <div className="absolute top-4 left-[155px] z-10">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        isOpenedPanel ? onPanelChange(null) : onPanelChange('devices');
-                    }}
-                    className="btn-primary flex items-center space-x-2 shadow-sm"
-                >
-                    <Navigation2 className="w-5 h-5" />
-                    <span>Devices</span>
-                </button>
-            </div>
-
             {/* Devices Dropdown Panel */}
             {isOpenedPanel && (
-                <div className="absolute top-16 left-[155px] w-80 bg-card/95 dark:bg-card-dark/95 backdrop-blur-md rounded-2xl shadow-panel-lg dark:shadow-panel-lg-dark border border-hairline dark:border-hairline-dark z-10 overflow-hidden flex flex-col max-h-[60vh] select-none animate-fade-in">
+                <div className="absolute top-20 left-4 w-80 max-w-[calc(100vw-2rem)] bg-card/95 dark:bg-card-dark/95 backdrop-blur-md rounded-2xl shadow-panel-lg dark:shadow-panel-lg-dark border border-hairline dark:border-hairline-dark z-10 overflow-hidden flex flex-col max-h-[calc(100vh-6.5rem)] select-none animate-fade-in">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3.5 border-b border-hairline dark:border-hairline-dark">
                         <h2 className="text-xs font-bold text-ink dark:text-ink-dark uppercase tracking-wider flex items-center space-x-2">

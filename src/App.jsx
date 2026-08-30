@@ -13,7 +13,7 @@ import AuthLayout from './components/auth/AuthLayout';
 import LandingPage from './components/marketing/LandingPage';
 import DeviceDetailPanel from './components/map/DeviceDetailPanel';
 import DashboardView from './components/dashboard/DashboardView';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin, Navigation2 } from 'lucide-react';
 import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { useDeviceManager } from './hooks/useDeviceManager';
 import { useDevicePolling } from './hooks/useDevicePolling';
@@ -348,6 +348,24 @@ function App() {
                   }}
                 />
               </Map>
+
+              {/* Map toolbar — single row so the toggles never collide */}
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                <button
+                  onClick={() => setOpenedPanel(openedPanel === 'geofences' ? null : 'geofences')}
+                  className="btn-primary shadow-panel dark:shadow-panel-dark"
+                >
+                  <MapPin className="w-5 h-5" />
+                  <span>Geofences</span>
+                </button>
+                <button
+                  onClick={() => setOpenedPanel(openedPanel === 'devices_overlay' ? null : 'devices_overlay')}
+                  className="btn-primary shadow-panel dark:shadow-panel-dark"
+                >
+                  <Navigation2 className="w-5 h-5" />
+                  <span>Devices</span>
+                </button>
+              </div>
 
               {/* Floating selected device detail sidebar */}
                {selectedDevice && (

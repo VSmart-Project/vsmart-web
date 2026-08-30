@@ -6,7 +6,7 @@ import { geofenceApi } from "../../api/deviceApi";
 import GeofencesPanel from "./GeofencesPanel";
 import DrawControl from "./DrawControl";
 import DrawnGeofences from "./DrawnGeofences";
-import { MapPin, X, CircleDot } from "lucide-react";
+import { X, CircleDot } from "lucide-react";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
 // ─── Draw instance ────────────────────────────────────────────────────────
@@ -321,19 +321,6 @@ const GeofencesLayer = ({
 
   return (
     <>
-      {/* Geofences toggle button */}
-      <div className="absolute top-4 left-4 z-10">
-        <button
-          onClick={() =>
-            isOpenedPanel ? onPanelChange() : onPanelChange("geofences")
-          }
-          className="btn-primary flex items-center space-x-2 shadow-panel dark:shadow-panel-dark"
-        >
-          <MapPin className="w-5 h-5" />
-          <span>Geofences</span>
-        </button>
-      </div>
-
       {/* Geofences panel */}
       {isOpenedPanel && (
         <GeofencesPanel

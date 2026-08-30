@@ -111,11 +111,9 @@ export default function Sidebar({ isOpen, onClose, activeView, onViewChange, onT
           <div className="px-3 border-t border-hairline dark:border-hairline-dark pt-6">
             <div className={clsx("flex items-center", isCollapsedDesktop ? "justify-center" : "space-x-3")}>
               <div className="relative">
-                <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80"
-                  alt="Profile Avatar"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-card dark:border-card-dark ring-2 ring-brand-50 dark:ring-brand-400/10"
-                />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-50 dark:bg-brand-400/10 ring-2 ring-brand-50 dark:ring-brand-400/10 text-sm font-bold text-brand-600 dark:text-brand-300">
+                  VT
+                </div>
                 <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-card dark:ring-card-dark" />
               </div>
               {isOpen && (

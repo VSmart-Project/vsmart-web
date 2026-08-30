@@ -1,24 +1,39 @@
 import { Source, Layer } from 'react-map-gl/maplibre';
+import { useTheme } from '../../hooks/useTheme.js';
 
-const historyLineLayer = {
-    id: 'device-history-line',
-    type: 'line',
-    paint: {
-        'line-color': '#6664d8', // Brand indigo
-        'line-width': 3,
-        'line-opacity': 0.7,
-    },
-};
+const historyLineLayout = { 'line-cap': 'round', 'line-join': 'round' };
 
-const historyPointsLayer = {
-    id: 'device-history-points',
-    type: 'circle',
-    paint: {
-        'circle-radius': 3,
-        'circle-color': '#ffffff',
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#5451c4',
-    },
+// thin line, zoom-scaled; a contrasting casing underneath keeps it readable on
+// both the light and the dark basemap.
+const buildLineLayers = (isDark) => {
+    const lineColor = isDark ? '#b9a8ff' : '#5b57d6';
+    const casingColor = isDark ? '#0b0d14' : '#ffffff';
+    const width = ['interpolate', ['linear'], ['zoom'], 11, 1.4, 15, 3, 18, 4];
+    const casingWidth = ['interpolate', ['linear'], ['zoom'], 11, 3, 15, 5.5, 18, 7];
+    return {
+        casing: {
+            id: 'device-history-casing',
+            type: 'line',
+            layout: historyLineLayout,
+            paint: { 'line-color': casingColor, 'line-width': casingWidth, 'line-opacity': 0.55 },
+        },
+        line: {
+            id: 'device-history-line',
+            type: 'line',
+            layout: historyLineLayout,
+            paint: { 'line-color': lineColor, 'line-width': width, 'line-opacity': 0.95 },
+        },
+        points: {
+            id: 'device-history-points',
+            type: 'circle',
+            paint: {
+                'circle-radius': 3,
+                'circle-color': casingColor,
+                'circle-stroke-width': 2,
+                'circle-stroke-color': lineColor,
+            },
+        },
+    };
 };
 
 const getDistanceKm = (coords1, coords2) => {
@@ -37,6 +52,9 @@ const getDistanceKm = (coords1, coords2) => {
 };
 
 export default function DeviceHistoryPathLayer({ deviceId, isVisible, history, matchedPath }) {
+    const { theme } = useTheme();
+    const layers = buildLineLayers(theme === 'dark');
+
     // We need at least 1 point to draw anything
     if (!history || history.length === 0 || !isVisible) {
         return null;
@@ -91,24 +109,29 @@ export default function DeviceHistoryPathLayer({ deviceId, isVisible, history, m
         },
     };
 
-    const geojsonPoints = {
-        type: 'FeatureCollection',
-        features: history.map(pos => ({
-            type: 'Feature',
-            properties: { sampleTime: pos.SampleTime },
-            geometry: { type: 'Point', coordinates: pos.Position }
-        }))
-    };
+    // Endpoints only (start/end of each drive segment) — a matched line does not
+    // need every raw fix drawn on top of it, and the raw fallback stays legible.
+    const endpointFeatures = lineSegments.flatMap((seg) =>
+        seg.length
+            ? [seg[0], seg[seg.length - 1]].map((coord) => ({
+                type: 'Feature',
+                properties: {},
+                geometry: { type: 'Point', coordinates: coord },
+            }))
+            : []
+    );
+    const geojsonPoints = { type: 'FeatureCollection', features: endpointFeatures };
 
     return (
         <>
             {lineSegments.length > 0 && (
                 <Source id={`history-line-source-${deviceId}`} type="geojson" data={geojsonLine}>
-                    <Layer {...historyLineLayer} id={`history-line-layer-${deviceId}`} />
+                    <Layer {...layers.casing} id={`history-casing-layer-${deviceId}`} />
+                    <Layer {...layers.line} id={`history-line-layer-${deviceId}`} />
                 </Source>
             )}
             <Source id={`history-points-source-${deviceId}`} type="geojson" data={geojsonPoints}>
-                <Layer {...historyPointsLayer} id={`history-points-layer-${deviceId}`} />
+                <Layer {...layers.points} id={`history-points-layer-${deviceId}`} />
             </Source>
         </>
     );

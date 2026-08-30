@@ -1,31 +1,46 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, Info, ChevronLeft, ChevronRight, AlertTriangle, RefreshCw, CalendarDays } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  X, ChevronLeft, ChevronRight, ChevronsRight, RefreshCw, CalendarDays,
+  Truck, Car, Bike, Bus, Package, Gauge, Clock, Route, MapPin, Sparkles,
+} from 'lucide-react';
 import { deviceApi } from '../../api/deviceApi';
 import { clsx } from 'clsx';
 
-// Icon config for timeline event types
-const EVENT_ICONS = {
-  driving: {
-    icon: (
-      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-500 dark:bg-brand-400 text-white dark:text-[#16161b]">
-        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-        </svg>
-      </div>
-    ),
-    label: 'Driving'
-  },
-  stopped: {
-    icon: (
-      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-500 text-white">
-        <div className="h-2 w-2 rounded-full bg-white"></div>
-      </div>
-    ),
-    label: 'Stopped'
-  }
+// ─── Config ────────────────────────────────────────────────────────────────
+
+const VEHICLE_ICON = {
+  truck: Truck,
+  car: Car,
+  motorbike: Bike,
+  van: Package,
+  bus: Bus,
+  other: Car,
 };
 
-// Calculate distance between two coordinates in km (Haversine formula)
+const STATUS_CONFIG = {
+  active: {
+    label: 'Active',
+    pill: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/30',
+    dot: 'bg-emerald-500',
+  },
+  inactive: {
+    label: 'Inactive',
+    pill: 'text-subtle dark:text-subtle-dark bg-surface dark:bg-white/5 border-hairline dark:border-hairline-dark',
+    dot: 'bg-subtle dark:bg-subtle-dark',
+  },
+  maintenance: {
+    label: 'Maintenance',
+    pill: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/30',
+    dot: 'bg-amber-500',
+  },
+};
+
+const EVENT_LABEL = { driving: 'Driving', stopped: 'Stopped' };
+const TABS = ['tracking', 'analytics', 'details'];
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+// Distance between two [lng, lat] coordinates in km (Haversine formula)
 const getDistanceKm = (coords1, coords2) => {
   if (!coords1 || !coords2) return 0;
   const [lon1, lat1] = coords1;
@@ -38,9 +53,49 @@ const getDistanceKm = (coords1, coords2) => {
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distance in km
-  return d;
+  return R * c;
 };
+
+const formatRelative = (ts) => {
+  if (!ts) return '—';
+  const s = Math.round((Date.now() - new Date(ts).getTime()) / 1000);
+  if (s < 45) return 'just now';
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} hr ago`;
+  return `${Math.round(h / 24)} d ago`;
+};
+
+// ─── Small presentational pieces ───────────────────────────────────────────
+
+const InfoRow = ({ label, value, mono }) => (
+  <div className="flex items-center justify-between gap-4 py-2.5">
+    <dt className="shrink-0 text-xs text-subtle dark:text-subtle-dark">{label}</dt>
+    <dd className={clsx('min-w-0 truncate text-right text-xs font-semibold text-ink dark:text-ink-dark', mono && 'font-mono')}>
+      {value}
+    </dd>
+  </div>
+);
+
+const MetricChip = ({ icon, children, tone = 'brand' }) => {
+  const Icon = icon;
+  return (
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-xs font-medium font-mono tabular-nums',
+        tone === 'brand'
+          ? 'bg-brand-50 dark:bg-brand-400/10 text-brand-600 dark:text-brand-300 border-brand-100 dark:border-brand-400/20'
+          : 'bg-surface dark:bg-white/5 text-muted dark:text-muted-dark border-hairline dark:border-hairline-dark'
+      )}
+    >
+      <Icon className="h-3 w-3 shrink-0" />
+      {children}
+    </span>
+  );
+};
+
+// ─── Component ─────────────────────────────────────────────────────────────
 
 export default function DeviceDetailPanel({ device, selectedDate, onSelectedDateChange, historyPoints, onHistoryPointsChange, onMatchedPathChange, onClose }) {
   const [activeTab, setActiveTab] = useState('tracking'); // 'tracking' | 'analytics' | 'details'
@@ -65,6 +120,8 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
     const d = date.getDate().toString().padStart(2, '0');
     return `${y}-${m}-${d}`;
   };
+
+  const isToday = formatInputDate(new Date(selectedDate)) === formatInputDate(new Date());
 
   // Reset date selection when active device changes
   useEffect(() => {
@@ -96,21 +153,25 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
     const endOfDay = new Date(selectedDate);
     endOfDay.setHours(23, 59, 59, 999);
 
-    deviceApi.getHistory(deviceId, startOfDay.toISOString(), endOfDay.toISOString(), { matched: true })
+    const startIso = startOfDay.toISOString();
+    const endIso = endOfDay.toISOString();
+    const sortChrono = (rows) => [...(rows || [])].sort(
+      (a, b) => new Date(a.SampleTime) - new Date(b.SampleTime)
+    );
+
+    // 1) Fast: raw points render immediately (no OSRM round-trip).
+    deviceApi.getHistory(deviceId, startIso, endIso)
       .then(res => {
-        // AWS history positions come sorted by sampleTime desc (newest first).
-        // Sort oldest to newest for chronological aggregation
-        const sortedHistory = [...(res.data || [])].sort(
-          (a, b) => new Date(a.SampleTime) - new Date(b.SampleTime)
-        );
-        onHistoryPointsChange(sortedHistory);
-        // matchedPath is only populated when the backend has a local OSRM
-        // instance configured; otherwise this is null and the map layer
-        // falls back to drawing from the raw points above.
-        onMatchedPathChange?.(res.matchedPath || []);
+        onHistoryPointsChange(sortChrono(res.data));
       })
       .catch(err => console.error('[History] Failed to load:', err))
       .finally(() => setLoading(false));
+
+    // 2) Slower: road-matched path swaps in when OSRM returns (null ⇒ keep raw).
+    onMatchedPathChange?.([]);
+    deviceApi.getHistory(deviceId, startIso, endIso, { matched: true })
+      .then(res => onMatchedPathChange?.(res.matchedPath || []))
+      .catch(() => { /* raw line already shown */ });
   }, [deviceId, selectedDate, onHistoryPointsChange, onMatchedPathChange]);
 
   useEffect(() => {
@@ -131,7 +192,7 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
 
       const distance = getDistanceKm(pt.Position, nextPt.Position);
       const timeMs = Math.abs(new Date(nextPt.SampleTime) - new Date(pt.SampleTime));
-      
+
       let type = 'stopped';
       let speed = 0;
 
@@ -226,15 +287,15 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
       }
 
       const durationMin = Math.round(durationMs / 60000);
-      
+
       // Calculate average speed for driving segment
-      const avgSpeed = seg.type === 'driving' 
+      const avgSpeed = seg.type === 'driving'
         ? seg.speeds.reduce((a, b) => a + b, 0) / seg.speeds.length
         : 0;
 
       return {
         type: seg.type,
-        time: seg.endTime 
+        time: seg.endTime
           ? new Date(seg.endTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
           : '12:00',
         startTime: seg.startTime,
@@ -259,7 +320,7 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
 
       parsedEvents.push({
         type: 'stopped',
-        time: device.sampleTime 
+        time: device.sampleTime
           ? new Date(device.sampleTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })
           : 'Just now',
         startTime: device.sampleTime ? new Date(device.sampleTime).getTime() - 600000 : new Date().getTime() - 600000,
@@ -300,6 +361,46 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
     });
   }, [events, fetchAddress, addresses]);
 
+  // Day summary derived from the same movement heuristic used for the timeline
+  const daySummary = useMemo(() => {
+    if (!historyPoints || historyPoints.length < 2) return null;
+    let distanceKm = 0;
+    let driveMs = 0;
+    let stopMs = 0;
+    let topKmh = 0;
+    let stops = 0;
+    let wasMoving = false;
+
+    for (let i = 0; i < historyPoints.length - 1; i++) {
+      const pt = historyPoints[i];
+      const nextPt = historyPoints[i + 1];
+      const d = getDistanceKm(pt.Position, nextPt.Position);
+      const ms = Math.abs(new Date(nextPt.SampleTime) - new Date(pt.SampleTime));
+      const isGap = ms > 30000;
+      const spd = !isGap && ms > 0 ? d / (ms / 3600000) : 0;
+
+      if (!isGap && spd > 3) {
+        distanceKm += d;
+        driveMs += ms;
+        topKmh = Math.max(topKmh, spd);
+        wasMoving = true;
+      } else {
+        stopMs += ms;
+        if (wasMoving) stops += 1;
+        wasMoving = false;
+      }
+    }
+
+    return {
+      distanceKm,
+      driveMin: Math.round(driveMs / 60000),
+      stopMin: Math.round(stopMs / 60000),
+      stops,
+      topKmh: Math.min(Math.round(topKmh), 120),
+      points: historyPoints.length,
+    };
+  }, [historyPoints]);
+
   if (!device) return null;
 
   // Calculate timeline ranges dynamically (optimized for 30+ minutes span with 5-minute steps)
@@ -311,7 +412,7 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
     const timestamps = events.flatMap(e => [new Date(e.startTime || e.rawTime), new Date(e.endTime || e.rawTime)]);
     const minTime = new Date(Math.min(...timestamps));
     const maxTime = new Date(Math.max(...timestamps));
-    
+
     // Round min time down to nearest 5 minutes
     const roundedMin = new Date(minTime);
     const minMin = roundedMin.getMinutes();
@@ -352,7 +453,7 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
 
     const leftPct = Math.max(0, Math.min(100, ((startMs - timelineStartMs) / totalRangeMs) * 100));
     const rightPct = Math.max(0, Math.min(100, ((endMs - timelineStartMs) / totalRangeMs) * 100));
-    
+
     let widthPct = rightPct - leftPct;
     if (widthPct < 1.5) widthPct = 1.5; // Ensure small events are visible
 
@@ -363,123 +464,111 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
     };
   });
 
+  const status = STATUS_CONFIG[device.status] || {
+    label: device.status ? device.status[0].toUpperCase() + device.status.slice(1) : 'Unknown',
+    pill: STATUS_CONFIG.inactive.pill,
+    dot: STATUS_CONFIG.inactive.dot,
+  };
+  const VehicleIcon = VEHICLE_ICON[device.type] || VEHICLE_ICON.other;
+  const coordText = device.position
+    ? `${device.position[1].toFixed(4)}, ${device.position[0].toFixed(4)}`
+    : '—';
 
   return (
-    <div className="absolute top-4 right-4 bottom-4 w-96 bg-card/95 dark:bg-card-dark/95 backdrop-blur-md rounded-3xl shadow-panel-lg dark:shadow-panel-lg-dark border border-hairline dark:border-hairline-dark z-20 flex flex-col overflow-hidden select-none animate-fade-in">
-      
-      {/* Scrollable container for panel details */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
-        
-        {/* Device Information Card */}
-        <div className="relative border border-hairline dark:border-hairline-dark bg-surface/60 dark:bg-white/[0.02] rounded-2xl p-4">
-          <button 
+    <div className="absolute top-4 right-4 bottom-4 z-20 flex w-96 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-3xl border border-hairline dark:border-hairline-dark bg-card/95 dark:bg-card-dark/95 shadow-panel-lg dark:shadow-panel-lg-dark backdrop-blur-md select-none animate-fade-in">
+
+      {/* ── Identity header (sticky) ── */}
+      <header className="shrink-0 border-b border-hairline dark:border-hairline-dark px-5 pb-4 pt-5">
+        <div className="flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-500 dark:bg-brand-400/10 dark:text-brand-400">
+            <VehicleIcon className="h-5 w-5" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-base font-bold leading-tight text-ink dark:text-ink-dark">
+              {device.displayName || 'Unnamed vehicle'}
+            </h2>
+            <div className="mt-1.5 flex items-center gap-2">
+              <span className={clsx('inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-semibold', status.pill)}>
+                <span className={clsx('h-1.5 w-1.5 rounded-full', status.dot)} />
+                {status.label}
+              </span>
+              <span className="truncate font-mono text-xs text-subtle dark:text-subtle-dark">
+                #{device.deviceId}
+              </span>
+            </div>
+          </div>
+
+          <button
             onClick={onClose}
-            className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-surface dark:hover:bg-white/5 text-subtle dark:text-subtle-dark hover:text-ink dark:hover:text-ink-dark transition-colors"
+            aria-label="Close panel"
+            className="-mr-1.5 -mt-1.5 shrink-0 rounded-lg p-1.5 text-subtle transition-colors hover:bg-surface hover:text-ink dark:text-subtle-dark dark:hover:bg-white/5 dark:hover:text-ink-dark"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
-
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-base font-bold text-ink dark:text-ink-dark leading-tight">
-                {device.displayName || 'null'}
-              </h2>
-              <div className="flex items-center space-x-2 mt-1">
-                {/* Real Device Status Badge */}
-                <span className={clsx(
-                  "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border",
-                  device.status === 'active' && "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/30 animate-pulse",
-                  device.status === 'inactive' && "bg-surface dark:bg-white/5 text-subtle dark:text-subtle-dark border-hairline dark:border-hairline-dark",
-                  device.status === 'maintenance' && "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-500/30"
-                )}>
-                  {device.status ? device.status.toUpperCase() : 'NULL'}
-                </span>
-                <span className="text-xs font-medium text-subtle dark:text-subtle-dark">
-                  #{device.deviceId}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Truck Image Mockup */}
-          <div className="my-4 flex items-center justify-center py-2">
-            <svg className="w-44 h-24 text-subtle dark:text-subtle-dark" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 70h140v-30H20v30z" fill="currentColor" opacity="0.35" />
-              <path d="M120 70h40V48h-40v22z" fill="currentColor" opacity="0.45" />
-              <path d="M140 48l15 10H140V48z" fill="currentColor" opacity="0.6" />
-              <path d="M130 52h8v8h-8v-8z" fill="currentColor" opacity="0.8" />
-              <circle cx="35" cy="72" r="10" fill="currentColor" opacity="0.85" />
-              <circle cx="35" cy="72" r="4" fill="currentColor" opacity="0.35" />
-              <circle cx="125" cy="72" r="10" fill="currentColor" opacity="0.85" />
-              <circle cx="125" cy="72" r="4" fill="currentColor" opacity="0.35" />
-              <circle cx="148" cy="72" r="10" fill="currentColor" opacity="0.85" />
-              <circle cx="148" cy="72" r="4" fill="currentColor" opacity="0.35" />
-              <path d="M30 40h70v2H30v-2z" fill="#6664d8" />
-            </svg>
-          </div>
-
-          {/* Grid Details - Removed Insurance, formatted Name and Code */}
-          <div className="grid grid-cols-2 gap-2 text-center border-t border-hairline dark:border-hairline-dark pt-3">
-            <div>
-              <p className="text-xs font-semibold text-subtle dark:text-subtle-dark uppercase tracking-wider">Vehicle Name</p>
-              <p className="text-xs font-bold text-muted dark:text-muted-dark mt-0.5 truncate">{device.displayName || 'null'}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-subtle dark:text-subtle-dark uppercase tracking-wider">Vehicle Code</p>
-              <p className="text-xs font-bold text-muted dark:text-muted-dark mt-0.5 truncate">{device.licensePlate || device.deviceId || 'null'}</p>
-            </div>
-          </div>
         </div>
 
-        {/* Tab Selection */}
-        <div className="flex border-b border-hairline dark:border-hairline-dark">
-          {['tracking', 'analytics', 'details'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 pb-3 text-xs font-semibold text-center border-b-2 transition-colors uppercase tracking-wider ${
-                activeTab === tab 
-                  ? 'border-brand-500 dark:border-brand-400 text-brand-600 dark:text-brand-400' 
-                  : 'border-transparent text-subtle dark:text-subtle-dark hover:text-muted dark:hover:text-muted-dark'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        <dl className="mt-3.5 divide-y divide-hairline dark:divide-hairline-dark rounded-xl border border-hairline dark:border-hairline-dark bg-surface/70 px-3 dark:bg-white/[0.03]">
+          <InfoRow label="Position" value={coordText} mono />
+          <InfoRow label="Last signal" value={formatRelative(device.sampleTime)} />
+        </dl>
+      </header>
 
-        {/* Tab Contents */}
+      {/* ── Tabs (sticky) ── */}
+      <div className="flex shrink-0 border-b border-hairline dark:border-hairline-dark px-3">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={clsx(
+              'relative flex-1 px-2 py-3 text-xs font-bold uppercase tracking-wider transition-colors',
+              activeTab === tab
+                ? 'text-brand-600 dark:text-brand-400'
+                : 'text-subtle hover:text-muted dark:text-subtle-dark dark:hover:text-muted-dark'
+            )}
+          >
+            {tab}
+            {activeTab === tab && (
+              <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-brand-500 dark:bg-brand-400" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Scroll area ── */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+
+        {/* ═══ TRACKING ═══ */}
         {activeTab === 'tracking' && (
-          <div className="space-y-4">
-            
-            {/* Last Update Header */}
+          <div className="space-y-5 p-5">
+
+            {/* Controls */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-1.5">
-                <span className="text-xs font-bold text-ink dark:text-ink-dark">Last Update</span>
-                <button
-                  onClick={fetchHistory}
-                  disabled={loading}
-                  className="p-1 hover:bg-surface dark:hover:bg-white/5 rounded-lg text-subtle dark:text-subtle-dark hover:text-muted dark:hover:text-muted-dark transition-all active:scale-95 disabled:opacity-50"
-                  title="Sync latest history"
-                >
-                  <RefreshCw className={clsx("w-3.5 h-3.5", loading && "animate-spin")} />
-                </button>
-              </div>
-              <div className="flex items-center space-x-1 text-xs text-muted dark:text-muted-dark font-semibold">
+              <button
+                onClick={fetchHistory}
+                disabled={loading}
+                className="group inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-subtle transition-colors hover:text-muted disabled:opacity-50 dark:text-subtle-dark dark:hover:text-muted-dark"
+                title="Sync latest history"
+              >
+                <RefreshCw className={clsx('h-3.5 w-3.5 transition-transform group-active:-rotate-180', loading && 'animate-spin')} />
+                Refresh
+              </button>
+
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => changeDate(-1)}
-                  className="p-1 hover:bg-surface dark:hover:bg-white/5 rounded-md text-subtle dark:text-subtle-dark hover:text-muted dark:hover:text-muted-dark transition-all active:scale-95"
-                  title="Ngày trước"
+                  className="rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-muted active:scale-95 dark:text-subtle-dark dark:hover:bg-white/5 dark:hover:text-muted-dark"
+                  title="Previous day"
                 >
-                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => dateInputRef.current?.showPicker?.() || dateInputRef.current?.click()}
-                  className="flex items-center space-x-1.5 bg-surface dark:bg-white/5 border border-hairline dark:border-hairline-dark rounded-lg px-2.5 py-1.5 hover:border-brand-300 dark:hover:border-brand-400/50 hover:bg-brand-50/50 dark:hover:bg-brand-400/10 transition-all cursor-pointer group"
-                  title="Chọn ngày"
+                  className="group flex items-center gap-1.5 rounded-lg border border-hairline bg-surface px-2.5 py-1.5 text-xs font-semibold text-muted transition-colors hover:border-brand-300 hover:bg-brand-50/60 hover:text-brand-600 dark:border-hairline-dark dark:bg-white/5 dark:text-muted-dark dark:hover:border-brand-400/50 dark:hover:bg-brand-400/10 dark:hover:text-brand-300"
+                  title="Pick a date"
                 >
-                  <CalendarDays className="w-3.5 h-3.5 text-brand-400 dark:text-brand-400 group-hover:text-brand-500 dark:group-hover:text-brand-300 transition-colors" />
-                  <span className="group-hover:text-brand-600 dark:group-hover:text-brand-300 transition-colors">{formatSelectedDate(selectedDate)}</span>
+                  <CalendarDays className="h-3.5 w-3.5 text-brand-400" />
+                  {formatSelectedDate(selectedDate)}
                 </button>
                 <input
                   ref={dateInputRef}
@@ -490,162 +579,208 @@ export default function DeviceDetailPanel({ device, selectedDate, onSelectedDate
                       onSelectedDateChange(new Date(e.target.value + 'T00:00:00'));
                     }
                   }}
-                  className="absolute opacity-0 pointer-events-none w-0 h-0"
+                  className="pointer-events-none absolute h-0 w-0 opacity-0"
                 />
                 <button
                   onClick={() => changeDate(1)}
-                  className="p-1 hover:bg-surface dark:hover:bg-white/5 rounded-md text-subtle dark:text-subtle-dark hover:text-muted dark:hover:text-muted-dark transition-all active:scale-95"
-                  title="Ngày sau"
+                  disabled={isToday}
+                  className="rounded-md p-1 text-subtle transition-colors hover:bg-surface hover:text-muted active:scale-95 disabled:opacity-30 dark:text-subtle-dark dark:hover:bg-white/5 dark:hover:text-muted-dark"
+                  title="Next day"
                 >
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </div>
 
-            {/* Timeline layout containing labels and the absolute segments bar */}
-            <div className="space-y-1.5 py-1">
+            {/* Horizontal activity bar */}
+            <div>
               {timelineStart && (
-                <div className="flex justify-between text-xs text-subtle dark:text-subtle-dark font-bold px-0.5">
+                <div className="flex justify-between px-0.5 font-mono text-[10px] font-medium text-subtle dark:text-subtle-dark">
                   {timelineLabels.map((lbl, idx) => (
                     <span key={idx}>{lbl}</span>
                   ))}
                 </div>
               )}
-
-              {/* Absolute-Positioned Horizontal Timeline Bar */}
-              <div className="h-5 w-full rounded-lg overflow-hidden relative bg-surface dark:bg-white/5 border border-hairline/60 dark:border-hairline-dark/60">
-                {timelineStart ? (
-                  timelineBars.map((bar, idx) => (
-                    <div 
+              <div className="relative mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-card-muted dark:bg-white/[0.06]">
+                {timelineStart
+                  ? timelineBars.map((bar, idx) => (
+                    <div
                       key={idx}
                       className={clsx(
-                        "absolute h-full transition-all duration-300",
-                        bar.type === 'driving' ? "bg-brand-500 dark:bg-brand-400" : "bg-rose-500" // Stopped is rose (red)
+                        'absolute inset-y-0 transition-all duration-300',
+                        bar.type === 'driving'
+                          ? 'bg-brand-500 dark:bg-brand-400'
+                          : 'bg-brand-500/25 dark:bg-brand-400/25'
                       )}
                       style={{ left: bar.left, width: bar.width }}
                     />
                   ))
-                ) : (
-                  <div className="h-full w-full bg-card-muted dark:bg-white/5" />
-                )}
+                  : <div className="h-full w-full" />}
+              </div>
+              <div className="mt-2 flex items-center gap-4">
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-subtle dark:text-subtle-dark">
+                  <span className="h-2 w-2 rounded-full bg-brand-500 dark:bg-brand-400" /> Driving
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-subtle dark:text-subtle-dark">
+                  <span className="h-2 w-2 rounded-full bg-brand-500/30 dark:bg-brand-400/30" /> Stopped
+                </span>
               </div>
             </div>
 
-            {/* Vertical timeline matching real historical updates */}
-            <div className="relative pl-6 border-l border-hairline dark:border-hairline-dark space-y-5 py-2">
-              {loading ? (
-                <div className="space-y-4 py-2">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="animate-pulse flex items-start space-x-3">
-                      <div className="h-5 w-5 bg-card-muted dark:bg-white/10 rounded-full shrink-0"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-3.5 bg-card-muted dark:bg-white/10 rounded w-1/3"></div>
-                        <div className="h-3 bg-card-muted dark:bg-white/5 rounded w-5/6"></div>
-                      </div>
+            {/* Vertical event timeline */}
+            {loading ? (
+              <div className="space-y-5 pl-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 w-20 rounded bg-card-muted dark:bg-white/10" />
+                      <div className="h-3 w-10 rounded bg-card-muted dark:bg-white/5" />
                     </div>
-                  ))}
-                </div>
-              ) : events.length > 0 ? (
-                events.map((eventItem, index) => {
+                    <div className="h-3 w-5/6 rounded bg-card-muted dark:bg-white/5" />
+                    <div className="h-4 w-24 rounded bg-card-muted dark:bg-white/5" />
+                  </div>
+                ))}
+              </div>
+            ) : events.length > 0 ? (
+              <ol className="relative">
+                {events.map((eventItem, index) => {
                   const key = eventItem.position ? `${eventItem.position[1]},${eventItem.position[0]}` : '';
-                  const addr = addresses[key] || "Translating coordinate...";
-                  const eventConf = EVENT_ICONS[eventItem.type] || EVENT_ICONS.stopped;
+                  const addr = addresses[key] || 'Resolving location…';
+                  const isDriving = eventItem.type === 'driving';
+                  const isLast = index === events.length - 1;
+                  const isLive = index === 0 && device.status === 'active';
 
                   return (
-                    <div key={index} className="relative group">
-                      
-                      {/* Timeline dot */}
-                      <span className="absolute -left-[37px] top-0 z-10 bg-card dark:bg-card-dark p-0.5 rounded-full">
-                        {eventConf.icon}
+                    <li key={index} className={clsx('relative pl-8', !isLast && 'pb-5')}>
+                      {/* rail */}
+                      {!isLast && (
+                        <span className="absolute left-[10px] top-6 bottom-0 w-px bg-hairline dark:bg-hairline-dark" />
+                      )}
+                      {/* node */}
+                      <span
+                        className={clsx(
+                          'absolute left-0 top-0.5 grid h-[21px] w-[21px] place-items-center rounded-full ring-4 ring-card dark:ring-card-dark',
+                          isDriving
+                            ? 'bg-brand-500 text-white dark:bg-brand-400 dark:text-[#16161b]'
+                            : 'border-2 border-hairline bg-card dark:border-hairline-dark dark:bg-card-dark'
+                        )}
+                      >
+                        {isDriving
+                          ? <ChevronsRight className="h-3 w-3" strokeWidth={3} />
+                          : <span className="h-1.5 w-1.5 rounded-full bg-subtle dark:bg-subtle-dark" />}
                       </span>
 
-                      {/* Timeline content */}
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-ink dark:text-ink-dark flex items-center gap-1.5">
-                            {eventConf.label}
-                            {index === 0 && device.status === 'active' && (
-                              <span className="h-1.5 w-1.5 rounded-full bg-brand-500 dark:bg-brand-400 animate-ping" />
-                            )}
-                          </span>
-                          <span className="text-xs font-semibold text-subtle dark:text-subtle-dark">{eventItem.time}</span>
-                        </div>
-                        
-                        <p className="text-xs text-muted dark:text-muted-dark mt-1 font-medium leading-relaxed">
-                          {addr}
-                        </p>
-
-                        {/* Speed, duration and distance badges calculated from database */}
-                        {(eventItem.speed || eventItem.duration || eventItem.distance) && (
-                          <div className="flex flex-wrap gap-1.5 mt-2.5">
-                            {eventItem.speed && (
-                              <span className="px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-400/10 text-brand-600 dark:text-brand-400 font-semibold text-xs border border-brand-100 dark:border-brand-400/20">
-                                {eventItem.speed}
-                              </span>
-                            )}
-                            {eventItem.duration && (
-                              <span className="px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-400/10 text-brand-600 dark:text-brand-400 font-semibold text-xs border border-brand-100 dark:border-brand-400/20">
-                                {eventItem.duration}
-                              </span>
-                            )}
-                            {eventItem.distance && (
-                              <span className="px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-400/10 text-brand-600 dark:text-brand-400 font-semibold text-xs border border-brand-100 dark:border-brand-400/20">
-                                {eventItem.distance}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-ink dark:text-ink-dark">
+                          {EVENT_LABEL[eventItem.type] || 'Update'}
+                          {isLive && (
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-500/70 dark:bg-brand-400/70" />
+                              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-500 dark:bg-brand-400" />
+                            </span>
+                          )}
+                        </span>
+                        <span className="shrink-0 font-mono text-xs font-medium text-subtle dark:text-subtle-dark">
+                          {eventItem.time}
+                        </span>
                       </div>
-                    </div>
+
+                      <p className="mt-1 flex items-start gap-1.5 text-xs leading-snug text-muted dark:text-muted-dark">
+                        <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-subtle dark:text-subtle-dark" />
+                        <span className="line-clamp-2">{addr}</span>
+                      </p>
+
+                      {(eventItem.speed || eventItem.duration || eventItem.distance) ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {eventItem.speed ? (
+                            <MetricChip icon={Gauge}>{eventItem.speed}</MetricChip>
+                          ) : null}
+                          {eventItem.duration ? (
+                            <MetricChip icon={Clock} tone="neutral">{eventItem.duration}</MetricChip>
+                          ) : null}
+                          {eventItem.distance ? (
+                            <MetricChip icon={Route}>{eventItem.distance}</MetricChip>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </li>
                   );
-                })
-              ) : (
-                <div className="text-center py-6 text-subtle dark:text-subtle-dark text-xs">
-                  No tracking events recorded.
+                })}
+              </ol>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-hairline dark:border-hairline-dark px-4 py-8 text-center">
+                <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-surface dark:bg-white/5">
+                  <Route className="h-4 w-4 text-subtle dark:text-subtle-dark" />
                 </div>
-              )}
-            </div>
+                <p className="mt-3 text-xs font-bold text-muted dark:text-muted-dark">No movement recorded</p>
+                <p className="mx-auto mt-1 max-w-[220px] text-xs leading-relaxed text-subtle dark:text-subtle-dark">
+                  This vehicle sent no position updates on {formatSelectedDate(selectedDate)}. Try another day.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
+        {/* ═══ ANALYTICS ═══ */}
         {activeTab === 'analytics' && (
-          <div className="space-y-4 py-4 text-center">
-            <Info className="w-8 h-8 text-brand-500 dark:text-brand-400 mx-auto" />
-            <h3 className="text-sm font-bold text-ink dark:text-ink-dark">Analytics Insights</h3>
-            <p className="text-xs text-subtle dark:text-subtle-dark leading-relaxed max-w-[240px] mx-auto">
-              Real-time velocity statistics, driver safety alerts, and fuel consumption graphs will display here.
-            </p>
+          <div className="space-y-4 p-5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-brand-500 dark:text-brand-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-subtle dark:text-subtle-dark">
+                Summary · {formatSelectedDate(selectedDate)}
+              </h3>
+            </div>
+
+            {loading ? (
+              <div className="animate-pulse space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-9 rounded-xl bg-card-muted dark:bg-white/5" />
+                ))}
+              </div>
+            ) : daySummary ? (
+              <dl className="divide-y divide-hairline dark:divide-hairline-dark rounded-2xl border border-hairline dark:border-hairline-dark bg-surface/50 px-4 dark:bg-white/[0.02]">
+                <InfoRow label="Distance travelled" value={`${daySummary.distanceKm.toFixed(1)} km`} mono />
+                <InfoRow label="Time driving" value={`${daySummary.driveMin} min`} mono />
+                <InfoRow label="Time stopped" value={`${daySummary.stopMin} min`} mono />
+                <InfoRow label="Stops" value={daySummary.stops} mono />
+                <InfoRow label="Top speed" value={`${daySummary.topKmh} km/h`} mono />
+                <InfoRow label="Position pings" value={daySummary.points} mono />
+              </dl>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-hairline dark:border-hairline-dark px-4 py-8 text-center">
+                <div className="mx-auto grid h-10 w-10 place-items-center rounded-full bg-surface dark:bg-white/5">
+                  <Gauge className="h-4 w-4 text-subtle dark:text-subtle-dark" />
+                </div>
+                <p className="mt-3 text-xs font-bold text-muted dark:text-muted-dark">Not enough data</p>
+                <p className="mx-auto mt-1 max-w-[220px] text-xs leading-relaxed text-subtle dark:text-subtle-dark">
+                  A day with at least two position updates is needed to compute a trip summary.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
+        {/* ═══ DETAILS ═══ */}
         {activeTab === 'details' && (
-          <div className="space-y-4 text-xs">
-            <div className="border border-hairline dark:border-hairline-dark bg-surface/60 dark:bg-white/[0.02] rounded-xl p-3 space-y-2">
-              <div className="flex justify-between">
-                <span className="text-subtle dark:text-subtle-dark font-medium">Device ID</span>
-                <span className="text-ink dark:text-ink-dark font-semibold font-mono">{device.deviceId || 'null'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-subtle dark:text-subtle-dark font-medium">Registered Name</span>
-                <span className="text-ink dark:text-ink-dark font-semibold">{device.displayName || 'null'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-subtle dark:text-subtle-dark font-medium">Device Type</span>
-                <span className="text-ink dark:text-ink-dark font-semibold capitalize">{device.type || 'null'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-subtle dark:text-subtle-dark font-medium">Coordinates</span>
-                <span className="text-ink dark:text-ink-dark font-semibold font-mono">
-                  {device.position ? `${device.position[1].toFixed(6)}, ${device.position[0].toFixed(6)}` : 'null'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-subtle dark:text-subtle-dark font-medium">Last Sample Time</span>
-                <span className="text-ink dark:text-ink-dark font-semibold">
-                  {device.sampleTime ? new Date(device.sampleTime).toLocaleString() : 'null'}
-                </span>
-              </div>
-            </div>
+          <div className="p-5">
+            <dl className="divide-y divide-hairline dark:divide-hairline-dark rounded-2xl border border-hairline dark:border-hairline-dark bg-surface/50 px-4 dark:bg-white/[0.02]">
+              <InfoRow label="Device ID" value={device.deviceId || '—'} mono />
+              <InfoRow label="Registered name" value={device.displayName || '—'} />
+              <InfoRow label="Vehicle type" value={device.type ? device.type[0].toUpperCase() + device.type.slice(1) : '—'} />
+              {device.licensePlate && <InfoRow label="License plate" value={device.licensePlate} mono />}
+              <InfoRow
+                label="Coordinates"
+                value={device.position ? `${device.position[1].toFixed(6)}, ${device.position[0].toFixed(6)}` : '—'}
+                mono
+              />
+              {device.accuracy?.Horizontal != null && (
+                <InfoRow label="Accuracy" value={`±${Math.round(device.accuracy.Horizontal)} m`} mono />
+              )}
+              <InfoRow
+                label="Last sample"
+                value={device.sampleTime ? new Date(device.sampleTime).toLocaleString() : '—'}
+              />
+            </dl>
           </div>
         )}
       </div>

@@ -1,65 +1,97 @@
 import { Marker } from 'react-map-gl/maplibre';
 import { Navigation2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { createFollower } from '../../realtime/smoothFollow';
 
-// Easing function for smooth movement
-const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+/**
+ * One requestAnimationFrame loop drives every device follower, so N markers cost
+ * one rAF, not N. Callbacks unregister themselves once their follower settles.
+ */
+const tickers = new Set();
+let rafId = null;
 
-const SmoothMarker = ({ deviceId, targetPos, statusColor, onClick }) => {
-  const [currentPos, setCurrentPos] = useState(targetPos);
-  const startPosRef = useRef(targetPos);
-  const startTimeRef = useRef(null);
-  const rafRef = useRef(null);
+function pump() {
+  const now = performance.now();
+  tickers.forEach((cb) => cb(now));
+  rafId = tickers.size ? requestAnimationFrame(pump) : null;
+}
+
+function addTicker(cb) {
+  tickers.add(cb);
+  if (rafId == null) rafId = requestAnimationFrame(pump);
+}
+
+function removeTicker(cb) {
+  tickers.delete(cb);
+  if (tickers.size === 0 && rafId != null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+}
+
+/**
+ * Feeds sparse fixes into a Catmull-Rom follower (see realtime/smoothFollow.js)
+ * and returns a per-frame { lng, lat, heading } the marker renders from.
+ */
+function useSmoothFollow(position, { fixSeq, serverTs, sampleTime, pathFromPrev } = {}) {
+  const followerRef = useRef(null);
+  if (followerRef.current == null) followerRef.current = createFollower();
+
+  const [out, setOut] = useState(() =>
+    position ? { lng: position[0], lat: position[1], heading: 0 } : null
+  );
+
+  const lng = position ? position[0] : null;
+  const lat = position ? position[1] : null;
+  const stamp = Number.isFinite(serverTs) ? serverTs : sampleTime;
 
   useEffect(() => {
-    if (!targetPos || !currentPos) return;
+    if (lng == null || lat == null) return undefined;
 
-    // If identical target, do nothing
-    if (targetPos[0] === currentPos[0] && targetPos[1] === currentPos[1]) {
-      return;
+    const follower = followerRef.current;
+    // Drive the animation only from real-time fixes (they carry serverTs). The
+    // periodic full-list REST refresh also re-renders this component but a
+    // slightly stale polled position must not yank the marker. Always take the
+    // very first fix so a fresh marker has something to show.
+    const realtime = Number.isFinite(serverTs);
+    if (realtime || follower.fixCount === 0) {
+      // A repeated seq is a road-snap correction: the follower re-targets that
+      // fix in place (with the on-road polyline, if given) instead of restarting.
+      follower.pushFix(lat, lng, {
+        seq: Number.isFinite(fixSeq) ? fixSeq : null,
+        serverTs: realtime ? serverTs : undefined,
+        path: Array.isArray(pathFromPrev) && pathFromPrev.length >= 2 ? pathFromPrev : undefined,
+      });
     }
 
-    // Capture the exact moment and position we start animating from
-    startPosRef.current = currentPos;
-    startTimeRef.current = performance.now();
-    const duration = 2000; // 2 seconds fluid movement
-
-    const animate = (time) => {
-      let timeFraction = (time - startTimeRef.current) / duration;
-      if (timeFraction > 1) timeFraction = 1;
-
-      const progress = easeInOutCubic(timeFraction);
-
-      const newLng = startPosRef.current[0] + (targetPos[0] - startPosRef.current[0]) * progress;
-      const newLat = startPosRef.current[1] + (targetPos[1] - startPosRef.current[1]) * progress;
-
-      setCurrentPos([newLng, newLat]);
-
-      if (timeFraction < 1) {
-        rafRef.current = requestAnimationFrame(animate);
-      } else {
-        console.log(`[SmoothMarker] Arrived at target: [${targetPos}]`);
-      }
+    let cancelled = false;
+    const cb = (now) => {
+      if (cancelled) return;
+      const s = follower.sample(now);
+      if (!s) return;
+      setOut({ lng: s.lon, lat: s.lat, heading: s.heading });
+      if (!s.moving && s.settled) removeTicker(cb);
     };
-
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(animate);
+    addTicker(cb);
+    cb(performance.now()); // paint the new fix immediately, don't wait a frame
 
     return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      cancelled = true;
+      removeTicker(cb);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targetPos[0], targetPos[1]]);
+    // Re-run when a genuinely new fix (or its road-snap correction) lands.
+  }, [stamp, serverTs, fixSeq, lng, lat, pathFromPrev]);
 
-  if (!currentPos || currentPos.length < 2) return null;
+  return out;
+}
+
+const SmoothMarker = ({ deviceId, position, fixSeq, serverTs, sampleTime, pathFromPrev, statusColor, onClick }) => {
+  const render = useSmoothFollow(position, { fixSeq, serverTs, sampleTime, pathFromPrev });
+
+  if (!render) return null;
 
   return (
-    <Marker
-      longitude={currentPos[0]}
-      latitude={currentPos[1]}
-      anchor="center"
-      onClick={onClick}
-    >
+    <Marker longitude={render.lng} latitude={render.lat} anchor="center" onClick={onClick}>
       <div className="relative cursor-pointer group">
         <div
           className="absolute inset-0 rounded-full animate-ping opacity-75"
@@ -69,7 +101,10 @@ const SmoothMarker = ({ deviceId, targetPos, statusColor, onClick }) => {
           className="relative w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform group-hover:scale-110"
           style={{ backgroundColor: statusColor }}
         >
-          <Navigation2 className="w-5 h-5 text-white" />
+          <Navigation2
+            className="w-5 h-5 text-white"
+            style={{ transform: `rotate(${render.heading}deg)`, transition: 'transform 80ms linear' }}
+          />
         </div>
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-card dark:bg-card-dark border border-hairline dark:border-hairline-dark rounded shadow-md text-xs font-semibold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 text-ink dark:text-ink-dark">
           {deviceId}
@@ -104,14 +139,16 @@ const DeviceMarkers = ({ devices = [], onDeviceClick }) => {
 
         if (!position || position.length < 2) return null;
 
-        const statusColor = getStatusColor(device);
-
         return (
           <SmoothMarker
             key={deviceId}
             deviceId={deviceId}
-            targetPos={position}
-            statusColor={statusColor}
+            position={position}
+            fixSeq={device.fixSeq}
+            serverTs={device.serverTs}
+            sampleTime={getSampleTime(device)}
+            pathFromPrev={device.pathFromPrev}
+            statusColor={getStatusColor(device)}
             onClick={(e) => {
               if (e && e.stopPropagation) {
                 e.stopPropagation();
